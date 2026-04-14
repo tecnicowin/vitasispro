@@ -83,15 +83,15 @@ function createTransactionHTML(t) {
     const secondaryDisplay = cur === 'USD' ? formatVES(t.amount) : formatCurrency(t.amount);
 
     return `
-        <div class="transaction-item">
+        <div class="transaction-item ${isExp ? 'expense-item' : 'income-item'}">
             <div class="item-icon" style="${color}"><i data-lucide="${isExp ? 'shopping-bag' : 'trending-up'}"></i></div>
             <div class="item-info">
                 <div class="item-category">${t.category}</div>
                 <div class="item-date">${t.date}</div>
             </div>
-            <div class="item-amount-group" style="text-align: right">
+            <div class="item-amount-group">
                 <div class="item-amount ${isExp ? 'amount-expense' : 'amount-income'}">${isExp ? '-' : '+'}${mainDisplay}</div>
-                <div style="font-size: 0.75rem; opacity: 0.6">${secondaryDisplay}</div>
+                <div style="font-size: 0.72rem; color: var(--text-secondary); margin-top: 2px">${secondaryDisplay}</div>
             </div>
         </div>`;
 }
