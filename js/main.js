@@ -67,17 +67,26 @@ function initEventListeners() {
         loadData();
         if (window.lucide) window.lucide.createIcons();
         applyTheme(state.theme);
-        
-        // Remove splash after load
+        initCharts();
+
         setTimeout(() => {
             const splash = document.getElementById('splash');
             if (splash) splash.classList.remove('active');
-            switchScreen('dashboard');
+
+            // ─── VERIFICACIÓN DE SEGURIDAD ─────────────────────
+            if (state.securityMode === 'pin' && state.pin) {
+                switchScreen('login-screen');
+                initPinScreen();
+            } else if (state.securityMode === 'biometric') {
+                switchScreen('login-screen');
+                initBiometric();
+            } else {
+                switchScreen('dashboard');
+                try { updateUI(); } catch(e) { console.error(e); }
+            }
+            // ───────────────────────────────────────────────────
         }, 1500);
 
-        initCharts();
-        
-        try { updateUI(); } catch(e) { console.error("UpdateUI Error:", e); }
         try { initSettingsListeners(); } catch(e) { console.error("InitSettings Error:", e); }
     });
 }
@@ -184,3 +193,129 @@ window.addEventListener('popstate', (event) => {
 // Initial boot
 window.history.pushState({ screen: 'dashboard' }, '');
 initEventListeners();
+
+// =============================================
+// PIN LOGIN SCREEN
+// =============================================
+function initPinScreen() {
+    let enteredPin = '';
+    let attempts = 0;
+    const MAX_ATTEMPTS = 3;
+    const dots = document.querySelectorAll('#login-screen .dot');
+    const pinBtns = document.querySelectorAll('#login-screen .pin-btn');
+    const title = document.querySelector('#login-screen h3');
+
+    function updateDots() {
+        dots.forEach((d, i) => d.classList.toggle('filled', i < enteredPin.length));
+    }
+
+    function onUnlock() {
+        switchScreen('dashboard');
+        try { updateUI(); } catch(e) { console.error(e); }
+        showToast('Bienvenido de nuevo, ' + (state.userName || '') + ' 👋');
+    }
+
+    function checkPin() {
+        if (enteredPin === String(state.pin)) {
+            onUnlock();
+        } else {
+            attempts++;
+            enteredPin = '';
+            updateDots();
+            // Animación de error
+            const loginContent = document.querySelector('.login-content');
+            loginContent.style.animation = 'shake 0.4s ease';
+            setTimeout(() => loginContent.style.animation = '', 400);
+
+            if (attempts >= MAX_ATTEMPTS) {
+                title.textContent = '🔒 App bloqueada. Recarga para intentar.';
+                pinBtns.forEach(b => b.disabled = true);
+            } else {
+                title.textContent = `PIN incorrecto (${MAX_ATTEMPTS - attempts} intentos restantes)`;
+                setTimeout(() => title.textContent = 'Ingresa tu PIN', 2000);
+            }
+        }
+    }
+
+    pinBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+            const val = btn.textContent.trim();
+            if (val === 'C') {
+                enteredPin = enteredPin.slice(0, -1);
+                updateDots();
+            } else if (val === 'OK' || btn.id === 'pin-ok') {
+                if (enteredPin.length === 4) checkPin();
+            } else if (!isNaN(val) && enteredPin.length < 4) {
+                enteredPin += val;
+                updateDots();
+                if (enteredPin.length === 4) setTimeout(checkPin, 200);
+            }
+        });
+    });
+
+    // CSS shake animation
+    if (!document.getElementById('shake-style')) {
+        const s = document.createElement('style');
+        s.id = 'shake-style';
+        s.textContent = `@keyframes shake {
+            0%,100%{transform:translateX(0)}
+            20%{transform:translateX(-10px)}
+            40%{transform:translateX(10px)}
+            60%{transform:translateX(-8px)}
+            80%{transform:translateX(8px)}
+        }`;
+        document.head.appendChild(s);
+    }
+
+    if (window.lucide) window.lucide.createIcons();
+}
+
+// =============================================
+// BIOMETRIC (WebAuthn) CON FALLBACK A PIN
+// =============================================
+async function initBiometric() {
+    const title = document.querySelector('#login-screen h3');
+
+    // Cambiar texto para indicar autenticación biométrica
+    if (title) title.textContent = 'Autenticando con huella...';
+
+    try {
+        if (!window.PublicKeyCredential) throw new Error('WebAuthn no soportado');
+
+        // Intentar autenticación con credencial almacenada o creación simple
+        const credId = state.biometricCredId
+            ? Uint8Array.from(atob(state.biometricCredId), c => c.charCodeAt(0))
+            : null;
+
+        if (credId) {
+            await navigator.credentials.get({
+                publicKey: {
+                    challenge: new Uint8Array(32),
+                    timeout: 60000,
+                    allowCredentials: [{ id: credId, type: 'public-key' }],
+                    userVerification: 'required'
+                }
+            });
+            // Autenticación exitosa
+            switchScreen('dashboard');
+            try { updateUI(); } catch(e) {}
+            showToast('Acceso biométrico verificado ✅');
+        } else {
+            // Sin credencial registrada → fallback a PIN si hay uno
+            throw new Error('Sin credencial biométrica registrada');
+        }
+    } catch (err) {
+        if (title) title.textContent = state.pin ? 'Ingresa tu PIN' : 'Ingresa tu PIN de seguridad';
+        // Fallback a PIN
+        if (state.pin) {
+            initPinScreen();
+        } else {
+            // Sin PIN ni biometría configurada correctamente → ir al dashboard
+            if (title) title.textContent = 'Sin seguridad configurada';
+            setTimeout(() => {
+                switchScreen('dashboard');
+                try { updateUI(); } catch(e) {}
+            }, 1500);
+        }
+    }
+}
