@@ -744,6 +744,25 @@ canvas {
 
 .cat-chip:hover i, .cat-chip:active i { color: white; }
 
+/* Botón "Nueva categoría" — estilo diferenciado */
+.cat-chip-new {
+    border-style: dashed;
+    border-color: var(--secondary);
+    color: var(--secondary);
+    background: rgba(16, 185, 129, 0.06);
+}
+
+.cat-chip-new i { color: var(--secondary); }
+
+.cat-chip-new:hover, .cat-chip-new:active {
+    background: var(--secondary);
+    border-color: var(--secondary);
+    color: white;
+    box-shadow: 0 6px 16px var(--secondary-glow);
+}
+
+.cat-chip-new:hover i, .cat-chip-new:active i { color: white; }
+
 /* Chat input */
 .chat-input-area {
     padding: 10px 12px calc(16px + env(safe-area-inset-bottom));

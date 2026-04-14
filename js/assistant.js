@@ -34,7 +34,7 @@ function addChatMessage(text, sender, showCategories = false) {
     let content = `<div class="message-bubble">${text}</div>`;
 
     if (showCategories) {
-        const categories = [
+        const defaultCats = [
             { n: "Comida",           i: "utensils" },
             { n: "Transporte",       i: "car" },
             { n: "Ocio",             i: "clapperboard" },
@@ -48,10 +48,19 @@ function addChatMessage(text, sender, showCategories = false) {
             { n: "Educacion",        i: "book-open" },
             { n: "Varios",           i: "plus-circle" }
         ];
-        content += `<div class="category-chip-list">${categories.map(c => `
+        // Agregar categorías personalizadas persistidas
+        const customCats = (state.customCategories || []).map(n => ({ n, i: 'tag' }));
+        const allCats = [...defaultCats, ...customCats];
+
+        content += `<div class="category-chip-list">
+            ${allCats.map(c => `
             <button class="cat-chip" onclick="document.getElementById('assistant-input').value='${c.n}'; document.getElementById('send-btn').click();">
                 <i data-lucide="${c.i}"></i><span>${c.n}</span>
-            </button>`).join('')}</div>`;
+            </button>`).join('')}
+            <button class="cat-chip cat-chip-new" onclick="document.getElementById('assistant-input').value='__nueva__'; document.getElementById('send-btn').click();">
+                <i data-lucide="plus"></i><span>Nueva</span>
+            </button>
+        </div>`;
     }
 
     msg.innerHTML = content;
@@ -109,8 +118,62 @@ function processCommand(text) {
     }
 
     if (norm.includes('cancelar') || norm.includes('olvida') || norm.includes('nada') || norm.includes('detener')) {
-        state.isAwaitingName = false; state.isAwaitingCategory = false; state.isAwaitingMoreInfo = false; state.isAwaitingRate = false; state.tempAmount = 0;
-        addChatMessage("Acción cancelada. ¿En qué más puedo ayudarte?", 'bot'); return;
+        state.isAwaitingName = false;
+        state.isAwaitingCategory = false;
+        state.isAwaitingMoreInfo = false;
+        state.isAwaitingRate = false;
+        state.isAwaitingNewCategory = false;
+        state.isAwaitingNewCategoryConfirm = false;
+        state.tempNewCategoryName = null;
+        state.tempAmount = 0;
+        addChatMessage("Acción cancelada. ¿En qué más puedo ayudarte?", 'bot');
+        return;
+    }
+
+    // =============================================
+    // FLUJO: Confirmar nombre de la nueva categoría
+    // =============================================
+    if (state.isAwaitingNewCategoryConfirm) {
+        if (norm === 'si' || norm === 'confirmar' || norm === 'ok' || norm === 'listo') {
+            const newCat = state.tempNewCategoryName;
+            // Guardar en lista de categorías personalizadas si no existe ya
+            if (!state.customCategories) state.customCategories = [];
+            if (!state.customCategories.includes(newCat)) {
+                state.customCategories.push(newCat);
+            }
+            state.isAwaitingNewCategoryConfirm = false;
+            state.isAwaitingCategory = false;
+            state.tempNewCategoryName = null;
+            completeTransaction(state.tempAmount, 'expense', newCat, state.tempCurrency);
+            addChatMessage(`✅ Categoría <b>${newCat}</b> creada y gasto de ${state.tempCurrency === 'USD' ? formatCurrency(state.tempAmount) : state.tempAmount + ' Bs.'} registrado. ${getBalanceFeedback(state.balance)}`, 'bot');
+            state.tempAmount = 0;
+        } else if (norm === 'no' || norm === 'cancelar') {
+            state.isAwaitingNewCategoryConfirm = false;
+            state.isAwaitingCategory = true;
+            state.tempNewCategoryName = null;
+            addChatMessage('¿Cuál categoría prefieres entonces?', 'bot', true);
+        } else {
+            // El usuario escribió otro nombre directamente
+            state.tempNewCategoryName = text.trim();
+            addChatMessage(`¿Confirmas la nueva categoría: <b>${state.tempNewCategoryName}</b>?`, 'bot');
+        }
+        return;
+    }
+
+    // =============================================
+    // FLUJO: Pedir nombre de la nueva categoría
+    // =============================================
+    if (state.isAwaitingNewCategory) {
+        const newName = text.trim();
+        if (newName && newName !== '__nueva__') {
+            state.tempNewCategoryName = newName;
+            state.isAwaitingNewCategory = false;
+            state.isAwaitingNewCategoryConfirm = true;
+            addChatMessage(`¿Confirmas la nueva categoría: <b>${newName}</b>?<br><small style="opacity:0.6">Responde <b>Sí</b> para guardar o escribe otro nombre para cambiarlo.</small>`, 'bot');
+        } else {
+            addChatMessage('Por favor escribe el nombre de la nueva categoría.', 'bot');
+        }
+        return;
     }
 
     // Detección ampliada: cubre variaciones fonéticas del STT para "bolívares"
@@ -197,9 +260,17 @@ function processCommand(text) {
         "Comida", "Transporte", "Ocio", "Salud", "Hogar",
         "Varios", "Restaurant", "Medicinas", "Consulta Medica",
         "Celular", "Personal", "Tarjeta Credito", "Tarjeta de Credito",
-        "Cashea", "Servicios", "Educacion"
+        "Cashea", "Servicios", "Educacion",
+        ...(state.customCategories || [])  // Incluir las personalizadas
     ];
     if (state.isAwaitingCategory) {
+        // Detectar si el usuario presionó el botón "Nueva"
+        if (norm === '__nueva__' || norm.includes('nueva categoria') || norm.includes('agregar categoria')) {
+            state.isAwaitingCategory = false;
+            state.isAwaitingNewCategory = true;
+            addChatMessage('🏷️ ¿Cómo quieres llamar a la nueva categoría?', 'bot');
+            return;
+        }
         let found = categories.find(c => norm.includes(normalize(c)));
         if (found) {
             completeTransaction(state.tempAmount, 'expense', found, state.tempCurrency);

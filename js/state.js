@@ -14,12 +14,16 @@ let state = {
     isAwaitingCategory: false,
     isAwaitingMoreInfo: false,
     isAwaitingRate: false,
+    isAwaitingNewCategory: false,       // Flujo: crear nueva categoría
+    isAwaitingNewCategoryConfirm: false, // Flujo: confirmar nombre
+    tempNewCategoryName: null,           // Nombre temporal de la nueva cat.
     tempAmount: 0,
     tempType: null,
     tempCurrency: 'USD',
     pin: null,
     securityMode: 'none', 
-    theme: 'dark'
+    theme: 'dark',
+    customCategories: []                 // Categorías creadas por el usuario
 };
 
 const STORAGE_KEY = 'finance_data';
