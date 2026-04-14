@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>Finanzas Assistant - Tu Control de Gastos</title>
+    <meta name="description"
+        content="Asistente virtual inteligente para el control de tus ingresos y gastos de forma fácil y elegante.">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;600;700&display=swap"
+        rel="stylesheet">
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body class="dark-theme">
+    <div id="app">
+        <!-- Security PIN Screen -->
+        <div id="login-screen" class="screen">
+            <div class="login-content">
+                <i data-lucide="lock" class="lock-icon"></i>
+                <h3>Ingresa tu PIN</h3>
+                <div class="pin-display">
+                    <span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="dot"></span>
+                </div>
+                <div class="pin-grid">
+                    <button class="pin-btn">1</button><button class="pin-btn">2</button><button
+                        class="pin-btn">3</button>
+                    <button class="pin-btn">4</button><button class="pin-btn">5</button><button
+                        class="pin-btn">6</button>
+                    <button class="pin-btn">7</button><button class="pin-btn">8</button><button
+                        class="pin-btn">9</button>
+                    <button class="pin-btn action">C</button><button class="pin-btn">0</button><button
+                        class="pin-btn action" id="pin-ok">OK</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Splash Screen -->
+        <div id="splash" class="screen active">
+            <div class="splash-content">
+                <div class="logo-container">
+                    <img src="logo.png" alt="Logo" class="logo-img">
+                </div>
+                <h1 class="app-title">Finance Assistant</h1>
+                <p class="app-subtitle">Tu inteligencia financiera personal</p>
+                <div class="loader"></div>
+            </div>
+        </div>
+
+        <!-- Main Dashboard -->
+        <div id="dashboard" class="screen">
+            <header>
+                <div class="user-info">
+                    <span class="welcome">Hola,</span>
+                    <h2 class="user-name">Usuario</h2>
+                </div>
+                <button class="icon-btn" id="ask-assistant-btn"><i data-lucide="sparkles"></i></button>
+            </header>
+
+            <main>
+                <!-- Balance Card -->
+                <section class="balance-card">
+                    <div class="balance-label">Saldo Neto Total</div>
+                    <div class="balance-amount-container">
+                        <div class="balance-amount main" id="main-balance">$0.00</div>
+                        <div class="balance-amount secondary" id="secondary-balance">Bs. 0.00</div>
+                    </div>
+                    <div class="balance-stats">
+                        <div class="stat income">
+                            <i data-lucide="arrow-up-circle"></i>
+                            <div class="stat-info">
+                                <span>Ingresos</span>
+                                <div class="stat-value" id="total-income">$0.00</div>
+                                <div class="stat-sub-value" id="total-income-bs">Bs. 0.00</div>
+                            </div>
+                        </div>
+                        <div class="stat expense">
+                            <i data-lucide="arrow-down-circle"></i>
+                            <div class="stat-info">
+                                <span>Gastos</span>
+                                <div class="stat-value" id="total-expense">$0.00</div>
+                                <div class="stat-sub-value" id="total-expense-bs">Bs. 0.00</div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Transactions Summary -->
+                <section class="transactions-section">
+                    <div class="section-header">
+                        <h3>Actividad Reciente</h3>
+                        <button class="text-btn">Ver todo</button>
+                    </div>
+                    <div id="transaction-list" class="transaction-list">
+                        <!-- Transactions will be loaded here -->
+                        <div class="empty-state">
+                            <i data-lucide="receipt"></i>
+                            <p>No hay movimientos registrados</p>
+                        </div>
+                    </div>
+                </section>
+            </main>
+
+            <!-- Navigation Bar -->
+            <nav class="bottom-nav">
+                <button class="nav-item active" data-screen="dashboard">
+                    <i data-lucide="home"></i>
+                    <span>Inicio</span>
+                </button>
+                <button class="nav-item" data-screen="analytics">
+                    <i data-lucide="pie-chart"></i>
+                    <span>Reportes</span>
+                </button>
+                <button class="nav-item" id="settings-btn">
+                    <i data-lucide="settings"></i>
+                    <span>Ajustes</span>
+                </button>
+            </nav>
+        </div>
+
+        <!-- Analytics Screen -->
+        <div id="analytics" class="screen">
+            <header>
+                <div class="header-content"
+                    style="display: flex; width: 100%; justify-content: space-between; align-items: center;">
+                    <button class="icon-btn" data-screen="dashboard"><i data-lucide="chevron-left"></i></button>
+                    <h3>Reportes Detallados</h3>
+                    <div class="spacer"></div>
+                </div>
+            </header>
+            <main class="analytics-content">
+                <div class="chart-wrapper">
+                    <h4>Distribución de Gastos</h4>
+                    <canvas id="categoryChart"></canvas>
+                </div>
+                <div class="chart-wrapper">
+                    <h4>Tu Salud Financiera</h4>
+                    <canvas id="trendChart"></canvas>
+                    <div id="health-message" class="health-msg"></div>
+                </div>
+
+
+            </main>
+            <!-- Navigation Bar (Shared) -->
+        </div>
+
+        <!-- Assistant Interaction Screen -->
+        <div id="assistant-panel" class="screen">
+            <header class="assistant-header">
+                <button class="icon-btn" id="close-assistant"><i data-lucide="chevron-down"></i></button>
+                <h3>Asistente Virtual</h3>
+                <div class="spacer"></div>
+                <button class="icon-btn" id="voice-toggle"><i data-lucide="volume-2"></i></button>
+            </header>
+            <div id="chat-container" class="chat-container">
+                <div class="chat-message bot">
+                    <div class="message-bubble">
+                        ¡Hola! Soy tu asistente financiero. ¿En qué puedo ayudarte hoy?
+                        Prueba diciendo algo como: "Gaste 20.00 en almuerzo".
+                    </div>
+                </div>
+            </div>
+            <div class="chat-input-area">
+                <div class="input-wrapper">
+                    <button id="mic-btn" class="action-btn"><i data-lucide="mic"></i></button>
+                    <input type="text" id="assistant-input" placeholder="Escribe un comando o gasto..."
+                        autocomplete="off">
+                    <button id="send-btn"><i data-lucide="send"></i></button>
+                </div>
+            </div>
+            <!-- Settings menu removed from here -->
+        </div>
+
+        <!-- Settings Dropdown Menu -->
+        <div id="settings-menu" class="dropdown-menu">
+            <header class="menu-header">
+                <h3>Configuración</h3>
+                <button class="icon-btn close-menu"><i data-lucide="x"></i></button>
+            </header>
+            <div class="settings-content">
+                <section class="settings-group">
+                    <h4>Perfil del Usuario</h4>
+                    <div class="setting-item">
+                        <i data-lucide="user"></i>
+                        <input type="text" id="edit-name" placeholder="Nombre completo">
+                    </div>
+                    <div class="setting-item">
+                        <i data-lucide="mail"></i>
+                        <input type="email" id="edit-email" placeholder="correo@verificado.com">
+                    </div>
+                    <div class="setting-item">
+                        <i data-lucide="phone"></i>
+                        <input type="tel" id="edit-phone" placeholder="+58 (0424) 000-0000">
+                    </div>
+                </section>
+
+                <section class="settings-group">
+                    <h4>Niveles de Seguridad</h4>
+                    <div class="setting-item">
+                        <div class="setting-text">
+                            <i data-lucide="shield-off"></i>
+                            <span>Sin Seguridad</span>
+                        </div>
+                        <input type="radio" name="security-mode" value="none" id="sec-none">
+                    </div>
+                    <div class="setting-item">
+                        <div class="setting-text">
+                            <i data-lucide="key"></i>
+                            <span>PIN Personal (4 dígitos)</span>
+                        </div>
+                        <input type="radio" name="security-mode" value="pin" id="sec-pin">
+                    </div>
+                    <div id="pin-setup" class="setting-item hidden">
+                        <i data-lucide="hash"></i>
+                        <input type="password" id="new-pin" placeholder="Crea tu PIN" maxlength="4">
+                    </div>
+                    <div class="setting-item">
+                        <div class="setting-text">
+                            <i data-lucide="fingerprint"></i>
+                            <span>Biométrico (Dispositivo)</span>
+                        </div>
+                        <input type="radio" name="security-mode" value="biometric" id="sec-biometric">
+                    </div>
+                </section>
+
+                <section class="settings-group">
+                    <h4>Divisas y Tasa BCV</h4>
+                    <div class="setting-item">
+                        <div class="setting-text">
+                            <i data-lucide="trending-up"></i>
+                            <span>Hoy: <b id="bcv-display-val">--</b> Bs/$</span>
+                        </div>
+                        <button id="update-rate-btn" class="icon-btn-small"><i
+                                data-lucide="refresh-cw"></i></button>
+                    </div>
+                </section>
+
+                <section class="settings-group">
+                    <h4>Apariencia</h4>
+                    <div class="setting-item">
+                        <div class="setting-text">
+                            <i data-lucide="sun"></i>
+                            <span>Modo Claro</span>
+                        </div>
+                        <input type="checkbox" id="theme-toggle" class="toggle">
+                    </div>
+                </section>
+
+                <section class="settings-group">
+                    <button class="chat-option-btn" id="save-settings-btn" style="width: 100%; margin-bottom: 15px;">Guardar Cambios</button>
+                    <button id="exit-app-btn" class="logout-btn">
+                        <i data-lucide="log-out"></i>
+                        <span>Cerrar Sesión</span>
+                    </button>
+                </section>
+            </div>
+        </div>
+        <div id="menu-overlay" class="menu-overlay"></div>
+
+        <!-- Script Entry -->
+        <script src="js/state.js"></script>
+        <script src="js/utils.js"></script>
+        <script src="js/ui.js"></script>
+        <script src="js/charts.js"></script>
+        <script src="js/assistant.js"></script>
+        <script src="js/main.js"></script>
+</body>
+
+</html>
