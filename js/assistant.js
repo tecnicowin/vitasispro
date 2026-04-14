@@ -35,14 +35,18 @@ function addChatMessage(text, sender, showCategories = false) {
 
     if (showCategories) {
         const categories = [
-            { n: "Comida", i: "utensils" },
-            { n: "Transporte", i: "car" },
-            { n: "Ocio", i: "clapperboard" },
-            { n: "Salud", i: "heart-pulse" },
-            { n: "Hogar", i: "home" },
-            { n: "Celular", i: "phone" },
-            { n: "Personal", i: "user" },
-            { n: "Varios", i: "plus-circle" }
+            { n: "Comida",           i: "utensils" },
+            { n: "Transporte",       i: "car" },
+            { n: "Ocio",             i: "clapperboard" },
+            { n: "Salud",            i: "heart-pulse" },
+            { n: "Hogar",            i: "home" },
+            { n: "Celular",          i: "smartphone" },
+            { n: "Personal",         i: "user" },
+            { n: "Tarjeta Credito",  i: "credit-card" },
+            { n: "Cashea",           i: "scan-qr-code" },
+            { n: "Servicios",        i: "zap" },
+            { n: "Educacion",        i: "book-open" },
+            { n: "Varios",           i: "plus-circle" }
         ];
         content += `<div class="category-chip-list">${categories.map(c => `
             <button class="cat-chip" onclick="document.getElementById('assistant-input').value='${c.n}'; document.getElementById('send-btn').click();">
@@ -189,7 +193,12 @@ function processCommand(text) {
         saveData(); updateUI(); addChatMessage(`Gusto en conocerte, ${state.userName}. ¿Qué quieres registrar hoy?`, 'bot'); return;
     }
 
-    const categories = ["Comida", "Transporte", "Ocio", "Salud", "Hogar", "Varios", "Restaurant", "Medicinas", "Consulta Medica", "Celular", "Personal"];
+    const categories = [
+        "Comida", "Transporte", "Ocio", "Salud", "Hogar",
+        "Varios", "Restaurant", "Medicinas", "Consulta Medica",
+        "Celular", "Personal", "Tarjeta Credito", "Tarjeta de Credito",
+        "Cashea", "Servicios", "Educacion"
+    ];
     if (state.isAwaitingCategory) {
         let found = categories.find(c => norm.includes(normalize(c)));
         if (found) {
