@@ -69,7 +69,13 @@ function addChatMessage(text, sender, showCategories = false) {
     if (window.lucide) window.lucide.createIcons();
     
     if (sender === 'bot' && state.voiceEnabled) {
-        const plainText = text.replace(/[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu, '');
+        const plainText = text
+            .replace(/<small[^>]*>.*?<\/small>/gis, '') // Quitar texto de ayuda dentro de <small>
+            .replace(/<br\s*\/?>/gi, '. ')               // <br> → pausa natural
+            .replace(/<[^>]+>/g, '')                     // Quitar todas las etiquetas HTML
+            .replace(/[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu, '') // Quitar emojis
+            .replace(/\s+/g, ' ')                        // Normalizar espacios
+            .trim();
         speak(plainText);
     }
 }
