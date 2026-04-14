@@ -57,7 +57,7 @@ function addChatMessage(text, sender, showCategories = false) {
             <button class="cat-chip" onclick="document.getElementById('assistant-input').value='${c.n}'; document.getElementById('send-btn').click();">
                 <i data-lucide="${c.i}"></i><span>${c.n}</span>
             </button>`).join('')}
-            <button class="cat-chip cat-chip-new" onclick="document.getElementById('assistant-input').value='__nueva__'; document.getElementById('send-btn').click();">
+            <button class="cat-chip cat-chip-new" onclick="requestNewCategory()">
                 <i data-lucide="plus"></i><span>Nueva</span>
             </button>
         </div>`;
@@ -90,6 +90,15 @@ async function fetchBCVRate() {
     }
 }
 
+// Lanzar flujo de nueva categoría SIN pasar por el input (evita que aparezca en chat o TTS)
+function requestNewCategory() {
+    if (!state.isAwaitingCategory && !state.isAwaitingNewCategory) return;
+    state.isAwaitingCategory = false;
+    state.isAwaitingNewCategory = true;
+    state.isAwaitingNewCategoryConfirm = false;
+    addChatMessage('🏷️ ¿Cómo quieres llamar a la nueva categoría? Escríbela a continuación.', 'bot');
+}
+
 function completeTransaction(a, t, c, currency = "USD") {
     addTransaction(a, t, c, currency);
     updateUI();
@@ -99,6 +108,53 @@ function completeTransaction(a, t, c, currency = "USD") {
 function processCommand(text) {
     const lower = text.toLowerCase();
     const norm = normalize(text);
+
+    // =============================================
+    // PRIORIDAD MÁXIMA: Flujos de nueva categoría
+    // Se evalúan ANTES que cualquier otro comando
+    // para evitar que el nombre se interprete como
+    // un comando de gasto/ingreso/balance, etc.
+    // =============================================
+
+    if (state.isAwaitingNewCategoryConfirm) {
+        if (norm === 'si' || norm === 'confirmar' || norm === 'ok' || norm === 'listo') {
+            const newCat = state.tempNewCategoryName;
+            if (!state.customCategories) state.customCategories = [];
+            if (!state.customCategories.includes(newCat)) {
+                state.customCategories.push(newCat);
+            }
+            state.isAwaitingNewCategoryConfirm = false;
+            state.isAwaitingCategory = false;
+            state.tempNewCategoryName = null;
+            completeTransaction(state.tempAmount, 'expense', newCat, state.tempCurrency);
+            addChatMessage(`✅ Categoría <b>${newCat}</b> creada y gasto de ${state.tempCurrency === 'USD' ? formatCurrency(state.tempAmount) : state.tempAmount + ' Bs.'} registrado. ${getBalanceFeedback(state.balance)}`, 'bot');
+            state.tempAmount = 0;
+        } else if (norm === 'no' || norm === 'cancelar') {
+            state.isAwaitingNewCategoryConfirm = false;
+            state.isAwaitingCategory = true;
+            state.tempNewCategoryName = null;
+            addChatMessage('¿Cuál categoría prefieres entonces?', 'bot', true);
+        } else {
+            // El usuario escribió otro nombre directamente → actualizar
+            state.tempNewCategoryName = text.trim();
+            addChatMessage(`¿Confirmas la nueva categoría: <b>${state.tempNewCategoryName}</b>?<br><small style="opacity:0.6">Responde <b>Sí</b> para guardar o escribe otro nombre.</small>`, 'bot');
+        }
+        return;
+    }
+
+    if (state.isAwaitingNewCategory) {
+        const newName = text.trim();
+        // Rechazar si es vacío o el propio disparador interno
+        if (!newName || newName === '__nueva__') {
+            addChatMessage('Por favor escribe el nombre de la nueva categoría.', 'bot');
+            return;
+        }
+        state.tempNewCategoryName = newName;
+        state.isAwaitingNewCategory = false;
+        state.isAwaitingNewCategoryConfirm = true;
+        addChatMessage(`¿Confirmas la nueva categoría: <b>${newName}</b>?<br><small style="opacity:0.6">Responde <b>Sí</b> para guardar o escribe otro nombre para cambiarlo.</small>`, 'bot');
+        return;
+    }
 
     if (state.isAwaitingRate) {
         let amt = extractAmount(lower);
@@ -127,52 +183,6 @@ function processCommand(text) {
         state.tempNewCategoryName = null;
         state.tempAmount = 0;
         addChatMessage("Acción cancelada. ¿En qué más puedo ayudarte?", 'bot');
-        return;
-    }
-
-    // =============================================
-    // FLUJO: Confirmar nombre de la nueva categoría
-    // =============================================
-    if (state.isAwaitingNewCategoryConfirm) {
-        if (norm === 'si' || norm === 'confirmar' || norm === 'ok' || norm === 'listo') {
-            const newCat = state.tempNewCategoryName;
-            // Guardar en lista de categorías personalizadas si no existe ya
-            if (!state.customCategories) state.customCategories = [];
-            if (!state.customCategories.includes(newCat)) {
-                state.customCategories.push(newCat);
-            }
-            state.isAwaitingNewCategoryConfirm = false;
-            state.isAwaitingCategory = false;
-            state.tempNewCategoryName = null;
-            completeTransaction(state.tempAmount, 'expense', newCat, state.tempCurrency);
-            addChatMessage(`✅ Categoría <b>${newCat}</b> creada y gasto de ${state.tempCurrency === 'USD' ? formatCurrency(state.tempAmount) : state.tempAmount + ' Bs.'} registrado. ${getBalanceFeedback(state.balance)}`, 'bot');
-            state.tempAmount = 0;
-        } else if (norm === 'no' || norm === 'cancelar') {
-            state.isAwaitingNewCategoryConfirm = false;
-            state.isAwaitingCategory = true;
-            state.tempNewCategoryName = null;
-            addChatMessage('¿Cuál categoría prefieres entonces?', 'bot', true);
-        } else {
-            // El usuario escribió otro nombre directamente
-            state.tempNewCategoryName = text.trim();
-            addChatMessage(`¿Confirmas la nueva categoría: <b>${state.tempNewCategoryName}</b>?`, 'bot');
-        }
-        return;
-    }
-
-    // =============================================
-    // FLUJO: Pedir nombre de la nueva categoría
-    // =============================================
-    if (state.isAwaitingNewCategory) {
-        const newName = text.trim();
-        if (newName && newName !== '__nueva__') {
-            state.tempNewCategoryName = newName;
-            state.isAwaitingNewCategory = false;
-            state.isAwaitingNewCategoryConfirm = true;
-            addChatMessage(`¿Confirmas la nueva categoría: <b>${newName}</b>?<br><small style="opacity:0.6">Responde <b>Sí</b> para guardar o escribe otro nombre para cambiarlo.</small>`, 'bot');
-        } else {
-            addChatMessage('Por favor escribe el nombre de la nueva categoría.', 'bot');
-        }
         return;
     }
 
