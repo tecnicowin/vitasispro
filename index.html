@@ -100,10 +100,13 @@
                 <section class="transactions-section">
                     <div class="section-header">
                         <h3>Actividad Reciente</h3>
-                        <button class="text-btn">Ver todo</button>
+                        <div class="filter-chips">
+                            <button class="filter-chip" data-filter="hoy">Hoy</button>
+                            <button class="filter-chip" data-filter="semana">Semana</button>
+                            <button class="filter-chip active" data-filter="mes">Mes</button>
+                        </div>
                     </div>
                     <div id="transaction-list" class="transaction-list">
-                        <!-- Transactions will be loaded here -->
                         <div class="empty-state">
                             <i data-lucide="receipt"></i>
                             <p>No hay movimientos registrados</p>
@@ -267,6 +270,68 @@
             </div>
         </div>
         <div id="menu-overlay" class="menu-overlay"></div>
+
+        <!-- Transaction Action Bottom Sheet -->
+        <div id="tx-sheet-overlay" class="tx-overlay"></div>
+        <div id="tx-action-sheet" class="tx-bottom-sheet">
+            <div class="sheet-handle"></div>
+            <!-- Info View -->
+            <div id="sheet-info-view">
+                <div class="sheet-header">
+                    <div>
+                        <div id="sheet-category" class="sheet-title">Categoría</div>
+                        <div class="sheet-meta">
+                            <span id="sheet-type-badge" class="sheet-type-badge">Tipo</span>
+                            <span id="sheet-date" class="sheet-date"></span>
+                        </div>
+                    </div>
+                    <div id="sheet-amount" class="sheet-display-amount">$0.00</div>
+                </div>
+                <div class="sheet-actions">
+                    <button id="sheet-edit-btn" class="sheet-action-btn btn-edit">
+                        <i data-lucide="pencil"></i>
+                        <span>Editar</span>
+                    </button>
+                    <button id="sheet-delete-btn" class="sheet-action-btn btn-delete">
+                        <i data-lucide="trash-2"></i>
+                        <span>Eliminar</span>
+                    </button>
+                </div>
+                <button id="sheet-close-btn" class="sheet-cancel-btn">Cancelar</button>
+            </div>
+            <!-- Edit Form View -->
+            <div id="sheet-edit-view" class="hidden">
+                <h4 class="edit-form-title">Editar Movimiento</h4>
+                <form id="edit-tx-form">
+                    <div class="edit-field">
+                        <label>Tipo</label>
+                        <select id="edit-tx-type">
+                            <option value="expense">Gasto</option>
+                            <option value="income">Ingreso</option>
+                        </select>
+                    </div>
+                    <div class="edit-field">
+                        <label>Monto</label>
+                        <input type="number" id="edit-tx-amount" placeholder="0.00" step="0.01" min="0">
+                    </div>
+                    <div class="edit-field">
+                        <label>Moneda</label>
+                        <select id="edit-tx-currency">
+                            <option value="USD">USD ($)</option>
+                            <option value="VES">VES (Bs.)</option>
+                        </select>
+                    </div>
+                    <div class="edit-field">
+                        <label>Categoría</label>
+                        <input type="text" id="edit-tx-category" placeholder="Ej: Alimentación">
+                    </div>
+                    <div class="edit-form-btns">
+                        <button type="button" id="edit-cancel-btn" class="sheet-cancel-btn">Cancelar</button>
+                        <button type="submit" class="chat-option-btn">Guardar Cambios</button>
+                    </div>
+                </form>
+            </div>
+        </div>
 
         <!-- Script Entry -->
         <script src="js/state.js"></script>

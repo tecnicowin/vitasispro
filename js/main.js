@@ -87,7 +87,66 @@ function initEventListeners() {
             // ───────────────────────────────────────────────────
         }, 1500);
 
-        try { initSettingsListeners(); } catch(e) { console.error("InitSettings Error:", e); }
+    // ── Filter chips ────────────────────────────────────────
+    document.querySelectorAll('.filter-chip').forEach(chip => {
+        chip.addEventListener('click', () => {
+            document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+            chip.classList.add('active');
+            activeFilter = chip.dataset.filter;
+            renderTransactions();
+        });
+    });
+
+    // ── Transaction action sheet ─────────────────────────────
+    const txOverlay = document.getElementById('tx-sheet-overlay');
+    if (txOverlay) txOverlay.addEventListener('click', closeTransactionSheet);
+
+    const sheetCloseBtn = document.getElementById('sheet-close-btn');
+    if (sheetCloseBtn) sheetCloseBtn.addEventListener('click', closeTransactionSheet);
+
+    const sheetEditBtn = document.getElementById('sheet-edit-btn');
+    if (sheetEditBtn) sheetEditBtn.addEventListener('click', () => {
+        document.getElementById('sheet-info-view').classList.add('hidden');
+        document.getElementById('sheet-edit-view').classList.remove('hidden');
+    });
+
+    const editCancelBtn = document.getElementById('edit-cancel-btn');
+    if (editCancelBtn) editCancelBtn.addEventListener('click', () => {
+        document.getElementById('sheet-info-view').classList.remove('hidden');
+        document.getElementById('sheet-edit-view').classList.add('hidden');
+    });
+
+    const sheetDeleteBtn = document.getElementById('sheet-delete-btn');
+    if (sheetDeleteBtn) sheetDeleteBtn.addEventListener('click', () => {
+        const form = document.getElementById('edit-tx-form');
+        const id = Number(form.dataset.id);
+        if (confirm('¿Eliminar este movimiento? Esta acción no se puede deshacer.')) {
+            deleteTransaction(id);
+            closeTransactionSheet();
+            updateUI();
+            showToast('Movimiento eliminado ✓');
+        }
+    });
+
+    const editForm = document.getElementById('edit-tx-form');
+    if (editForm) editForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const id = Number(editForm.dataset.id);
+        const amount = parseFloat(document.getElementById('edit-tx-amount').value);
+        const type = document.getElementById('edit-tx-type').value;
+        const category = document.getElementById('edit-tx-category').value.trim();
+        const currency = document.getElementById('edit-tx-currency').value;
+        if (!amount || amount <= 0 || !category) {
+            showToast('Completa todos los campos correctamente');
+            return;
+        }
+        editTransaction(id, amount, type, category, currency);
+        closeTransactionSheet();
+        updateUI();
+        showToast('Movimiento actualizado ✓');
+    });
+
+    try { initSettingsListeners(); } catch(e) { console.error("InitSettings Error:", e); }
     });
 }
 

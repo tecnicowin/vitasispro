@@ -53,11 +53,46 @@ function addTransaction(amount, type, category, currency = 'USD') {
         currency: currency,
         type: type,
         category: category,
-        date: new Date().toLocaleDateString('es-ES', { day: '2-digit', month: 'short' })
+        date: new Date().toLocaleDateString('es-ES', { day: '2-digit', month: 'short' }),
+        timestamp: Date.now()
     };
     state.transactions.push(transaction);
     if (type === 'income') { state.income += usdAmount; state.balance += usdAmount; }
     else { state.expenses += usdAmount; state.balance -= usdAmount; }
     saveData();
     return transaction;
+}
+
+function recalcTotals() {
+    state.income = 0;
+    state.expenses = 0;
+    state.balance = 0;
+    state.transactions.forEach(t => {
+        if (t.type === 'income') { state.income += t.amount; state.balance += t.amount; }
+        else { state.expenses += t.amount; state.balance -= t.amount; }
+    });
+}
+
+function deleteTransaction(id) {
+    state.transactions = state.transactions.filter(t => t.id !== id);
+    recalcTotals();
+    saveData();
+}
+
+function editTransaction(id, newAmount, newType, newCategory, newCurrency) {
+    const idx = state.transactions.findIndex(t => t.id === id);
+    if (idx === -1) return false;
+    let usdAmount = newAmount;
+    if (newCurrency === 'VES' && state.bcvRate) usdAmount = newAmount / state.bcvRate;
+    state.transactions[idx] = {
+        ...state.transactions[idx],
+        amount: usdAmount,
+        originalAmount: newAmount,
+        currency: newCurrency,
+        type: newType,
+        category: newCategory
+    };
+    recalcTotals();
+    saveData();
+    return true;
 }

@@ -1192,7 +1192,271 @@ canvas {
 }
 
 /* =====================
-   19. ANIMATIONS
+   19. FILTER CHIPS
+   ===================== */
+.filter-chips {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+}
+
+.filter-chip {
+    background: var(--surface);
+    border: 1px solid var(--glass-border);
+    color: var(--text-secondary);
+    padding: 5px 13px;
+    border-radius: 20px;
+    font-size: 0.74rem;
+    font-weight: 600;
+    font-family: 'Inter', sans-serif;
+    transition: all var(--transition-fast);
+    letter-spacing: 0.02em;
+}
+
+.filter-chip:hover {
+    background: var(--surface-hover);
+    color: var(--text-primary);
+}
+
+.filter-chip.active {
+    background: var(--primary-glow);
+    border-color: var(--primary);
+    color: var(--primary-light);
+}
+
+/* =====================
+   20. TRANSACTION BOTTOM SHEET
+   ===================== */
+.tx-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.55);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    z-index: 3000;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.32s ease;
+}
+
+.tx-overlay.active {
+    opacity: 1;
+    pointer-events: all;
+}
+
+.tx-bottom-sheet {
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    background: var(--bg-card);
+    border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+    border-top: 1px solid var(--glass-border-light);
+    box-shadow: 0 -20px 60px rgba(0,0,0,0.5);
+    z-index: 3100;
+    padding: 12px 20px calc(28px + env(safe-area-inset-bottom));
+    transform: translateY(100%);
+    transition: transform 0.38s cubic-bezier(0.32, 0.72, 0, 1);
+    max-width: 430px;
+    margin: 0 auto;
+}
+
+@media (min-width: 768px) {
+    .tx-bottom-sheet { left: 50%; transform: translateX(-50%) translateY(100%); right: auto; width: 430px; }
+    .tx-bottom-sheet.active { transform: translateX(-50%) translateY(0) !important; }
+}
+
+.tx-bottom-sheet.active {
+    transform: translateY(0);
+}
+
+.sheet-handle {
+    width: 36px; height: 4px;
+    background: var(--glass-border-light);
+    border-radius: 2px;
+    margin: 0 auto 18px;
+}
+
+.sheet-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--glass-border);
+}
+
+.sheet-title {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 6px;
+}
+
+.sheet-meta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.sheet-type-badge {
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: 0.73rem;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+}
+
+.badge-expense {
+    background: rgba(244,63,94,0.12);
+    color: var(--expense);
+}
+
+.badge-income {
+    background: rgba(16,185,129,0.12);
+    color: var(--secondary);
+}
+
+.sheet-date {
+    font-size: 0.78rem;
+    color: var(--text-secondary);
+}
+
+.sheet-display-amount {
+    font-size: 1.4rem;
+    font-weight: 800;
+    font-family: 'Outfit', sans-serif;
+    letter-spacing: -0.02em;
+    flex-shrink: 0;
+}
+
+.sheet-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 12px;
+}
+
+.sheet-action-btn {
+    padding: 14px;
+    border-radius: var(--radius-md);
+    font-size: 0.9rem;
+    font-weight: 700;
+    font-family: 'Inter', sans-serif;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: all var(--transition-bounce);
+}
+
+.sheet-action-btn i { width: 18px; height: 18px; }
+
+.btn-edit {
+    background: rgba(124,111,247,0.12);
+    border: 1px solid var(--primary);
+    color: var(--primary-light);
+}
+
+.btn-edit:hover, .btn-edit:active {
+    background: var(--primary);
+    color: white;
+    box-shadow: 0 6px 20px var(--primary-glow);
+    transform: translateY(-2px);
+}
+
+.btn-delete {
+    background: rgba(244,63,94,0.08);
+    border: 1px solid rgba(244,63,94,0.4);
+    color: var(--expense);
+}
+
+.btn-delete:hover, .btn-delete:active {
+    background: var(--expense);
+    color: white;
+    border-color: var(--expense);
+    box-shadow: 0 6px 20px rgba(244,63,94,0.3);
+    transform: translateY(-2px);
+}
+
+.sheet-cancel-btn {
+    width: 100%;
+    padding: 13px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--glass-border);
+    background: var(--surface);
+    color: var(--text-secondary);
+    font-size: 0.88rem;
+    font-weight: 600;
+    font-family: 'Inter', sans-serif;
+    transition: all var(--transition-fast);
+}
+
+.sheet-cancel-btn:hover { background: var(--surface-hover); color: var(--text-primary); }
+
+/* Edit form */
+.edit-form-title {
+    font-size: 1rem;
+    font-weight: 700;
+    margin-bottom: 16px;
+    color: var(--text-primary);
+}
+
+.edit-field {
+    margin-bottom: 12px;
+}
+
+.edit-field label {
+    display: block;
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: 5px;
+}
+
+.edit-field input,
+.edit-field select {
+    width: 100%;
+    background: var(--surface);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-sm);
+    color: var(--text-primary);
+    font-size: 0.9rem;
+    font-family: 'Inter', sans-serif;
+    padding: 11px 13px;
+    outline: none;
+    transition: border-color var(--transition-fast);
+}
+
+.edit-field input:focus,
+.edit-field select:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px var(--primary-glow);
+}
+
+.edit-field select option { background: var(--bg-card); }
+
+.edit-form-btns {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-top: 16px;
+}
+
+/* Action hint on transaction items */
+.item-action-hint {
+    color: var(--text-dim);
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+}
+.item-action-hint i { width: 14px; height: 14px; }
+
+/* Utility */
+.hidden { display: none !important; }
+
+/* =====================
+   21. ANIMATIONS
    ===================== */
 @keyframes spin { to { transform: rotate(360deg); } }
 
