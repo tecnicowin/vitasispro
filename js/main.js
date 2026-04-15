@@ -1,5 +1,16 @@
 // js/main.js
+
+// Registrar Service Worker para PWA al inicio
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js')
+            .then(reg => console.log('PWA Service Worker registrado ✅', reg))
+            .catch(err => console.log('Error registrando SW ❌', err));
+    });
+}
+
 function initEventListeners() {
+    // ── Navegación entre pantallas ─────────────────────────
     document.querySelectorAll('[data-screen]').forEach(btn => {
         btn.addEventListener('click', () => {
             const screenId = btn.getAttribute('data-screen');
@@ -11,6 +22,33 @@ function initEventListeners() {
         });
     });
 
+    // ── Filtros (Search & Chips) ──────────────────────────
+    const searchInput = document.getElementById('tx-search-input');
+    if (searchInput) {
+        searchInput.addEventListener('input', (e) => {
+            renderTransactions(e.target.value);
+        });
+    }
+
+    document.querySelectorAll('.filter-chip').forEach(chip => {
+        chip.addEventListener('click', () => {
+            const filterValue = chip.dataset.filter;
+            activeFilter = filterValue;
+            document.querySelectorAll(`.filter-chip`).forEach(c => {
+                c.classList.toggle('active', c.dataset.filter === filterValue);
+            });
+            renderTransactions(searchInput?.value || '');
+            updateCharts();
+        });
+    });
+
+    // ── Exportación CSV ────────────────────────────────────
+    const exportBtn = document.getElementById('export-csv-btn');
+    if (exportBtn) {
+        exportBtn.addEventListener('click', exportTransactionsToCSV);
+    }
+
+    // ── Asistente Virtual ──────────────────────────────────
     const assistantBtn = document.getElementById('ask-assistant-btn');
     if (assistantBtn) {
         assistantBtn.addEventListener('click', () => {
@@ -40,10 +78,9 @@ function initEventListeners() {
     if (sendBtn) sendBtn.addEventListener('click', handleSend);
     if (input) input.addEventListener('keypress', (e) => { if (e.key === 'Enter') handleSend(); });
 
+    // ── Voz del Asistente ──────────────────────────────────
     const micBtn = document.getElementById('mic-btn');
     const voiceToggleBtn = document.getElementById('voice-toggle');
-    
-    // Voice toggle 
     if(voiceToggleBtn) {
         voiceToggleBtn.addEventListener('click', () => {
             state.voiceEnabled = !state.voiceEnabled;
@@ -63,66 +100,22 @@ function initEventListeners() {
         rec.onresult = (e) => { input.value = e.results[0][0].transcript; handleSend(); };
     }
 
-    document.addEventListener('DOMContentLoaded', () => {
-        loadData();
-        if (window.lucide) window.lucide.createIcons();
-        applyTheme(state.theme);
-        initCharts();
-
-        setTimeout(() => {
-            const splash = document.getElementById('splash');
-            if (splash) splash.classList.remove('active');
-
-            // ─── VERIFICACIÓN DE SEGURIDAD ─────────────────────
-            if (state.securityMode !== 'none') {
-                switchScreen('login-screen');
-                initLoginFlow();
-            } else {
-                switchScreen('dashboard');
-                try { updateUI(); } catch(e) { console.error(e); }
-            }
-            // ───────────────────────────────────────────────────
-        }, 1500);
-
-    // ── Filter chips ────────────────────────────────────────
-    document.querySelectorAll('.filter-chip').forEach(chip => {
-        chip.addEventListener('click', () => {
-            // Sincronizar todos los chips del mismo filtro en todas las pantallas
-            const filterValue = chip.dataset.filter;
-            activeFilter = filterValue;
-            
-            document.querySelectorAll(`.filter-chip`).forEach(c => {
-                c.classList.toggle('active', c.dataset.filter === filterValue);
-            });
-            
-            renderTransactions();
-            updateCharts();
-        });
-    });
-
-    // ── Transaction action sheet ─────────────────────────────
+    // ── Transaction Action Sheet ──────────────────────────
     const txOverlay = document.getElementById('tx-sheet-overlay');
     if (txOverlay) txOverlay.addEventListener('click', closeTransactionSheet);
 
-    const sheetCloseBtn = document.getElementById('sheet-close-btn');
-    if (sheetCloseBtn) sheetCloseBtn.addEventListener('click', closeTransactionSheet);
-
-    const sheetEditBtn = document.getElementById('sheet-edit-btn');
-    if (sheetEditBtn) sheetEditBtn.addEventListener('click', () => {
+    document.getElementById('sheet-close-btn')?.addEventListener('click', closeTransactionSheet);
+    document.getElementById('sheet-edit-btn')?.addEventListener('click', () => {
         document.getElementById('sheet-info-view').classList.add('hidden');
         document.getElementById('sheet-edit-view').classList.remove('hidden');
     });
-
-    const editCancelBtn = document.getElementById('edit-cancel-btn');
-    if (editCancelBtn) editCancelBtn.addEventListener('click', () => {
+    document.getElementById('edit-cancel-btn')?.addEventListener('click', () => {
         document.getElementById('sheet-info-view').classList.remove('hidden');
         document.getElementById('sheet-edit-view').classList.add('hidden');
     });
 
-    const sheetDeleteBtn = document.getElementById('sheet-delete-btn');
-    if (sheetDeleteBtn) sheetDeleteBtn.addEventListener('click', () => {
-        const form = document.getElementById('edit-tx-form');
-        const id = Number(form.dataset.id);
+    document.getElementById('sheet-delete-btn')?.addEventListener('click', () => {
+        const id = Number(document.getElementById('edit-tx-form').dataset.id);
         if (confirm('¿Eliminar este movimiento? Esta acción no se puede deshacer.')) {
             deleteTransaction(id);
             closeTransactionSheet();
@@ -131,10 +124,10 @@ function initEventListeners() {
         }
     });
 
-    const editForm = document.getElementById('edit-tx-form');
-    if (editForm) editForm.addEventListener('submit', (e) => {
+    document.getElementById('edit-tx-form')?.addEventListener('submit', (e) => {
         e.preventDefault();
-        const id = Number(editForm.dataset.id);
+        const f = e.target;
+        const id = Number(f.dataset.id);
         const amount = parseFloat(document.getElementById('edit-tx-amount').value);
         const type = document.getElementById('edit-tx-type').value;
         const category = document.getElementById('edit-tx-category').value.trim();
@@ -149,7 +142,27 @@ function initEventListeners() {
         showToast('Movimiento actualizado ✓');
     });
 
-    try { initSettingsListeners(); } catch(e) { console.error("InitSettings Error:", e); }
+    // ── Boot sequence ────────────────────────────────────
+    document.addEventListener('DOMContentLoaded', () => {
+        loadData();
+        if (window.lucide) window.lucide.createIcons();
+        applyTheme(state.theme);
+        initCharts();
+
+        setTimeout(() => {
+            const splash = document.getElementById('splash');
+            if (splash) splash.classList.remove('active');
+
+            if (state.securityMode !== 'none') {
+                switchScreen('login-screen');
+                initLoginFlow();
+            } else {
+                switchScreen('dashboard');
+                try { updateUI(); } catch(e) { console.error(e); }
+            }
+        }, 1500);
+
+        initSettingsListeners();
     });
 }
 
@@ -158,30 +171,17 @@ function initSettingsListeners() {
     const closeBtn = document.querySelector('.close-menu');
     const overlay = document.getElementById('menu-overlay');
 
-    if (settingsBtn) {
-        settingsBtn.onclick = (e) => { e.preventDefault(); toggleMenu(); };
-    }
+    if (settingsBtn) settingsBtn.onclick = (e) => { e.preventDefault(); toggleMenu(); };
     if (closeBtn) closeBtn.onclick = (e) => { e.preventDefault(); toggleMenu(); };
     if (overlay) overlay.onclick = (e) => { e.preventDefault(); toggleMenu(); };
 
     const themeToggle = document.getElementById('theme-toggle');
     const secRadios = document.querySelectorAll('input[name="security-mode"]');
     const pinSetup = document.getElementById('pin-setup');
-    const newPinInput = document.getElementById('new-pin');
-    const editName = document.getElementById('edit-name');
-    const editEmail = document.getElementById('edit-email');
-    const editPhone = document.getElementById('edit-phone');
-    const updateRateBtn = document.getElementById('update-rate-btn');
-    const exitBtn = document.getElementById('exit-app-btn');
-
-    if (themeToggle) themeToggle.checked = state.theme === 'light';
-    if (editName) editName.value = state.userName || '';
-    if (editEmail) editEmail.value = state.email || ''; 
-    if (editPhone) editPhone.value = state.phone || '';
     
+    if (themeToggle) themeToggle.checked = state.theme === 'light';
     if (state.securityMode) {
-        const modeId = state.securityMode === 'biometric' ? 'sec-biometric' : `sec-${state.securityMode}`;
-        const activeRadio = document.getElementById(modeId);
+        const activeRadio = document.getElementById(state.securityMode === 'biometric' ? 'sec-biometric' : `sec-${state.securityMode}`);
         if (activeRadio) activeRadio.checked = true;
         if (state.securityMode === 'pin') pinSetup?.classList.remove('hidden');
     }
@@ -192,252 +192,124 @@ function initSettingsListeners() {
                 pinSetup.classList.remove('hidden'); 
             } else if (radio.value === 'biometric') {
                 pinSetup.classList.add('hidden');
-                // Intentar registrar biometría si no existe
                 if (!state.biometricCredId) {
-                    const ok = confirm("¿Deseas registrar tu huella/rostro en este dispositivo?");
-                    if (ok) await registerBiometric();
-                    else {
-                        // Revertir a PIN si cancela
-                        document.getElementById('sec-pin').checked = true;
-                        pinSetup.classList.remove('hidden');
-                    }
+                    if (confirm("¿Deseas registrar tu huella/rostro?")) await registerBiometric();
+                    else { document.getElementById('sec-pin').checked = true; pinSetup.classList.remove('hidden'); }
                 }
-            } else { 
-                pinSetup.classList.add('hidden'); 
-            }
+            } else { pinSetup.classList.add('hidden'); }
         });
     });
 
-    const saveBtn = document.getElementById('save-settings-btn');
-    if (saveBtn) {
-        saveBtn.addEventListener('click', () => {
-            if (confirm("¿Confirmas que deseas guardar todos los cambios en ajustes?")) {
-                state.userName = editName?.value || state.userName;
-                state.email = editEmail?.value || state.email;
-                state.phone = editPhone?.value || state.phone;
-                
-                let selectedSec = Array.from(secRadios).find(r => r.checked)?.value;
-                if (selectedSec) {
-                    state.securityMode = selectedSec;
-                    if (selectedSec === 'pin' && newPinInput?.value.length === 4) {
-                        state.pin = newPinInput.value;
-                        newPinInput.value = '';
-                    } else if (selectedSec === 'none') {
-                        state.pin = null;
-                    }
-                }
-
-                state.theme = themeToggle?.checked ? 'light' : 'dark';
-                applyTheme(state.theme);
-
-                saveData();
-                updateUI();
-                showToast("Ajustes guardados correctamente");
-                toggleMenu();
+    document.getElementById('save-settings-btn')?.addEventListener('click', () => {
+        if (confirm("¿Guardar cambios en ajustes?")) {
+            state.userName = document.getElementById('edit-name')?.value || state.userName;
+            state.email = document.getElementById('edit-email')?.value || state.email;
+            state.phone = document.getElementById('edit-phone')?.value || state.phone;
+            state.securityMode = Array.from(secRadios).find(r => r.checked)?.value;
+            if (state.securityMode === 'pin' && document.getElementById('new-pin')?.value.length === 4) {
+                state.pin = document.getElementById('new-pin').value;
             }
-        });
-    }
-
-    const addCatBtn = document.getElementById('add-cat-btn');
-    const newCatInput = document.getElementById('new-cat-input');
-    if (addCatBtn && newCatInput) {
-        addCatBtn.addEventListener('click', () => {
-            const name = newCatInput.value.trim();
-            if (!name) return;
-            if (!state.customCategories) state.customCategories = [];
-            if (state.customCategories.includes(name)) {
-                showToast("La categoría ya existe");
-                return;
-            }
-            state.customCategories.push(name);
-            newCatInput.value = '';
+            state.theme = themeToggle?.checked ? 'light' : 'dark';
+            applyTheme(state.theme);
             saveData();
-            renderCategories();
-            showToast("Categoría agregada");
-        });
-        newCatInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') addCatBtn.click();
-        });
-    }
-
-    updateRateBtn?.addEventListener('click', fetchBCVRate);
-    exitBtn?.addEventListener('click', () => { if (confirm("¿Estás seguro que deseas cerrar la sesión?")) { document.body.innerHTML = "<div style='display:flex; height:100vh; align-items:center; justify-content:center; background:#000; color:#fff;'>Aplicación cerrada localmente.</div>"; setTimeout(() => window.location.reload(), 3000); } });
-}
-
-// History API For mobile
-window.addEventListener('popstate', (event) => {
-    // Cuando pulsen el botón físico de Android "Atras"
-    const menu = document.getElementById('settings-menu');
-    if (menu && menu.classList.contains('active')) {
-        toggleMenu(); // Cierra el menu configuracion en vez de salir de la app
-        window.history.pushState({ screen: 'dashboard' }, ''); // Evita salir de la app
-        return;
-    }
-    
-    const panel = document.getElementById('assistant-panel');
-    if(panel && panel.classList.contains('active')) {
-        panel.classList.remove('active');
-        window.history.pushState({ screen: 'dashboard' }, '');
-        return;
-    }
-
-    if (event.state && event.state.screen) {
-        switchScreen(event.state.screen);
-    }
-});
-
-// Initial boot
-window.history.pushState({ screen: 'dashboard' }, '');
-initEventListeners();
-
-// =============================================
-// PIN LOGIN SCREEN
-// =============================================
-function initPinScreen() {
-    let enteredPin = '';
-    let attempts = 0;
-    const MAX_ATTEMPTS = 3;
-    const dots = document.querySelectorAll('#login-screen .dot');
-    const pinBtns = document.querySelectorAll('#login-screen .pin-btn');
-    const title = document.querySelector('#login-screen h3');
-
-    function updateDots() {
-        dots.forEach((d, i) => d.classList.toggle('filled', i < enteredPin.length));
-    }
-
-    function onUnlock() {
-        switchScreen('dashboard');
-        try { updateUI(); } catch(e) { console.error(e); }
-        showToast('Bienvenido de nuevo, ' + (state.userName || '') + ' 👋');
-    }
-
-    function checkPin() {
-        if (enteredPin === String(state.pin)) {
-            onUnlock();
-        } else {
-            attempts++;
-            enteredPin = '';
-            updateDots();
-            // Animación de error
-            const loginContent = document.querySelector('.login-content');
-            loginContent.style.animation = 'shake 0.4s ease';
-            setTimeout(() => loginContent.style.animation = '', 400);
-
-            if (attempts >= MAX_ATTEMPTS) {
-                title.textContent = '🔒 App bloqueada. Recarga para intentar.';
-                pinBtns.forEach(b => b.disabled = true);
-            } else {
-                title.textContent = `PIN incorrecto (${MAX_ATTEMPTS - attempts} intentos restantes)`;
-                setTimeout(() => title.textContent = 'Ingresa tu PIN', 2000);
-            }
+            updateUI();
+            showToast("Ajustes guardados correctamente");
+            toggleMenu();
         }
-    }
-
-    pinBtns.forEach(btn => {
-        btn.addEventListener('click', () => {
-            const val = btn.textContent.trim();
-            if (val === 'C') {
-                enteredPin = enteredPin.slice(0, -1);
-                updateDots();
-            } else if (val === 'OK' || btn.id === 'pin-ok') {
-                if (enteredPin.length === 4) checkPin();
-            } else if (!isNaN(val) && enteredPin.length < 4) {
-                enteredPin += val;
-                updateDots();
-                if (enteredPin.length === 4) setTimeout(checkPin, 200);
-            }
-        });
     });
 
-    // CSS shake animation
-    if (!document.getElementById('shake-style')) {
-        const s = document.createElement('style');
-        s.id = 'shake-style';
-        s.textContent = `@keyframes shake {
-            0%,100%{transform:translateX(0)}
-            20%{transform:translateX(-10px)}
-            40%{transform:translateX(10px)}
-            60%{transform:translateX(-8px)}
-            80%{transform:translateX(8px)}
-        }`;
-        document.head.appendChild(s);
-    }
+    document.getElementById('add-cat-btn')?.addEventListener('click', () => {
+        const input = document.getElementById('new-cat-input');
+        const name = input.value.trim();
+        if (!name) return;
+        if (!state.customCategories) state.customCategories = [];
+        if (state.customCategories.includes(name)) return showToast("La categoría ya existe");
+        state.customCategories.push(name);
+        input.value = '';
+        saveData();
+        renderCategories();
+        showToast("Categoría agregada");
+    });
 
-    if (window.lucide) window.lucide.createIcons();
+    document.getElementById('update-rate-btn')?.addEventListener('click', fetchBCVRate);
+    document.getElementById('exit-app-btn')?.addEventListener('click', () => { 
+        if (confirm("¿Cerrar sesión?")) { 
+            document.body.innerHTML = "<div style='display:flex; height:100vh; align-items:center; justify-content:center; background:#000; color:#fff;'>Limpiando sesión...</div>"; 
+            setTimeout(() => window.location.reload(), 2000); 
+        } 
+    });
 }
 
-// =============================================
-// LOGIN FLOW MANAGER
-// =============================================
+// ── Biometric & Auth Logic ────────────────────────────
 function initLoginFlow() {
     const bioBtn = document.getElementById('biometric-login-btn');
-    const fallbackText = document.getElementById('biometric-fallback-text');
-
     if (state.securityMode === 'biometric' && state.biometricCredId) {
         bioBtn?.classList.remove('hidden');
-        fallbackText?.classList.remove('hidden');
+        document.getElementById('biometric-fallback-text')?.classList.remove('hidden');
         bioBtn.onclick = initBiometric;
-        // Auto-intentar biometría
         initBiometric();
-    } else {
-        bioBtn?.classList.add('hidden');
-        fallbackText?.classList.add('hidden');
     }
-    
-    // Siempre cargar el PIN como capa activa/fallback
     initPinScreen();
 }
 
 async function registerBiometric() {
     try {
-        const challenge = new Uint8Array(32);
-        window.crypto.getRandomValues(challenge);
-        const userPath = state.userName || 'Usuario';
-        
+        const challenge = new Uint8Array(32); window.crypto.getRandomValues(challenge);
+        const name = state.userName || 'Usuario';
         const cred = await navigator.credentials.create({
             publicKey: {
-                challenge,
-                rp: { name: "Finance Assistant" },
-                user: { id: new Uint8Array(16), name: userPath, displayName: userPath },
-                pubKeyCredParams: [{ alg: -7, type: "public-key" }, { alg: -257, type: "public-key" }],
-                timeout: 60000,
-                authenticatorSelection: { userVerification: "required" }
+                challenge,rp: { name: "Finance App" },
+                user: { id: new Uint8Array(16), name, displayName: name },
+                pubKeyCredParams: [{ alg: -7, type: "public-key" }],
+                timeout: 60000, authenticatorSelection: { userVerification: "required" }
             }
         });
-
         if (cred) {
             state.biometricCredId = btoa(String.fromCharCode(...new Uint8Array(cred.rawId)));
             state.securityMode = 'biometric';
             saveData();
-            showToast("Biometría registrada con éxito ✅");
+            showToast("Biometría registrada ✅");
         }
-    } catch (err) {
-        console.error(err);
-        showToast("Error al registrar biometría ❌");
-        document.getElementById('sec-pin').checked = true;
-    }
+    } catch (e) { showToast("Error biométrico ❌"); }
 }
 
 async function initBiometric() {
-    const title = document.querySelector('#login-screen h3');
     try {
-        if (!state.biometricCredId) throw new Error('No cred');
         const credId = Uint8Array.from(atob(state.biometricCredId), c => c.charCodeAt(0));
-
         await navigator.credentials.get({
-            publicKey: {
-                challenge: new Uint8Array(32),
-                allowCredentials: [{ id: credId, type: 'public-key' }],
-                userVerification: 'required'
-            }
+            publicKey: { challenge: new Uint8Array(32), allowCredentials: [{ id: credId, type: 'public-key' }], userVerification: 'required' }
         });
-
-        // Éxito
-        switchScreen('dashboard');
-        updateUI();
-        showToast('Identidad verificada ✅');
-    } catch (err) {
-        console.warn("Biometric failed/canceled", err);
-        if (title) title.textContent = 'Ingresa tu PIN';
-    }
+        switchScreen('dashboard'); updateUI(); showToast('Acceso concedido ✅');
+    } catch (e) { console.warn("Bio cancel"); }
 }
+
+function initPinScreen() {
+    let enteredPin = '';
+    const dots = document.querySelectorAll('#login-screen .dot');
+    const pinBtns = document.querySelectorAll('#login-screen .pin-btn');
+    
+    pinBtns.forEach(btn => {
+        btn.onclick = () => {
+            const val = btn.textContent.trim();
+            if (val === 'C') enteredPin = enteredPin.slice(0, -1);
+            else if (val === 'OK' || btn.id === 'pin-ok') { if (enteredPin === String(state.pin)) unlock(); }
+            else if (!isNaN(val) && enteredPin.length < 4) {
+                enteredPin += val;
+                if (enteredPin.length === 4) setTimeout(() => { if (enteredPin === String(state.pin)) unlock(); else { enteredPin = ''; updateDots(); } }, 200);
+            }
+            updateDots();
+        };
+    });
+    const updateDots = () => dots.forEach((d, i) => d.classList.toggle('filled', i < enteredPin.length));
+    const unlock = () => { switchScreen('dashboard'); updateUI(); showToast('Hola de nuevo 👋'); };
+}
+
+// ── Mobile History API ───────────────────────────────
+window.addEventListener('popstate', () => {
+    if (document.getElementById('settings-menu').classList.contains('active')) toggleMenu();
+    else if (document.getElementById('assistant-panel').classList.contains('active')) document.getElementById('assistant-panel').classList.remove('active');
+    window.history.pushState({ screen: 'dashboard' }, '');
+});
+
+window.history.pushState({ screen: 'dashboard' }, '');
+initEventListeners();

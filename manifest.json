@@ -1,0 +1,18 @@
+{
+  "name": "Finance Assistant Pro",
+  "short_name": "FinanceApp",
+  "description": "Tu inteligencia financiera personal y control de gastos",
+  "start_url": "index.html",
+  "display": "standalone",
+  "background_color": "#070d1a",
+  "theme_color": "#7c6ff7",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "app_icon_512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

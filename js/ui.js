@@ -108,13 +108,23 @@ function removeCategory(index) {
     }
 }
 
-function renderTransactions() {
+function renderTransactions(searchQuery = '') {
     const listElement = document.getElementById('transaction-list');
     if (!listElement) return;
-    const filtered = getFilteredTransactions().slice().reverse();
+    
+    let filtered = getFilteredTransactions();
+    
+    if (searchQuery) {
+        const q = normalize(searchQuery);
+        filtered = filtered.filter(t => normalize(t.category).includes(q) || t.date.toLowerCase().includes(q));
+    }
+    
+    filtered = filtered.slice().reverse();
+    
     if (filtered.length === 0) {
         const labels = { hoy: 'hoy', semana: 'esta semana', mes: 'este mes' };
-        listElement.innerHTML = `<div class="empty-state"><i data-lucide="receipt"></i><p>Sin movimientos ${labels[activeFilter]}</p></div>`;
+        const msg = searchQuery ? `Sin resultados para "${searchQuery}"` : `Sin movimientos ${labels[activeFilter]}`;
+        listElement.innerHTML = `<div class="empty-state"><i data-lucide="receipt"></i><p>${msg}</p></div>`;
     } else {
         try {
             listElement.innerHTML = filtered.map(t => createTransactionHTML(t)).join('');

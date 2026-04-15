@@ -21,6 +21,9 @@
     <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="style.css">
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#070d1a">
 </head>
 
 <body class="dark-theme">
@@ -113,6 +116,13 @@
                             <button class="filter-chip active" data-filter="mes">Mes</button>
                         </div>
                     </div>
+
+                    <!-- Search Bar -->
+                    <div class="search-container">
+                        <i data-lucide="search" class="search-icon"></i>
+                        <input type="text" id="tx-search-input" placeholder="Buscar por categoría o descripción...">
+                    </div>
+
                     <div id="transaction-list" class="transaction-list">
                         <div class="empty-state">
                             <i data-lucide="receipt"></i>
@@ -146,6 +156,9 @@
                     style="display: flex; width: 100%; justify-content: space-between; align-items: center;">
                     <button class="icon-btn" data-screen="dashboard"><i data-lucide="chevron-left"></i></button>
                     <h3>Reportes Detallados</h3>
+                    <button id="export-csv-btn" class="icon-btn-small" title="Exportar CSV">
+                        <i data-lucide="download"></i>
+                    </button>
                     <div class="filter-chips">
                         <button class="filter-chip" data-filter="hoy">Hoy</button>
                         <button class="filter-chip" data-filter="semana">Semana</button>
