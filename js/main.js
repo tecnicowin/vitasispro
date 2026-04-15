@@ -90,10 +90,16 @@ function initEventListeners() {
     // ── Filter chips ────────────────────────────────────────
     document.querySelectorAll('.filter-chip').forEach(chip => {
         chip.addEventListener('click', () => {
-            document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
-            chip.classList.add('active');
-            activeFilter = chip.dataset.filter;
+            // Sincronizar todos los chips del mismo filtro en todas las pantallas
+            const filterValue = chip.dataset.filter;
+            activeFilter = filterValue;
+            
+            document.querySelectorAll(`.filter-chip`).forEach(c => {
+                c.classList.toggle('active', c.dataset.filter === filterValue);
+            });
+            
             renderTransactions();
+            updateCharts();
         });
     });
 

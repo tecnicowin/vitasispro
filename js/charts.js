@@ -23,24 +23,45 @@ function initCharts() {
 
 function updateCharts() {
     if (!categoryChart) return;
-    const exps = state.transactions.filter(t => t.type === 'expense');
+    
+    // Obtener transacciones según el filtro activo
+    const filtered = getFilteredTransactions();
+    
+    // 1. Gráfico de Categorías (Gastos)
+    const exps = filtered.filter(t => t.type === 'expense');
     const cats = {};
     exps.forEach(e => cats[e.category] = (cats[e.category] || 0) + e.amount);
+    
     categoryChart.data.labels = Object.keys(cats);
     categoryChart.data.datasets[0].data = Object.values(cats);
     categoryChart.update();
 
+    // 2. Gráfico de Salud (Ingresos vs Gastos del período)
     if (trendChart) {
-        trendChart.data.datasets[0].data = [state.income, state.expenses];
+        let periodIncome = 0;
+        let periodExpenses = 0;
+        
+        filtered.forEach(t => {
+            if (t.type === 'income') periodIncome += t.amount;
+            else periodExpenses += t.amount;
+        });
+
+        trendChart.data.datasets[0].data = [periodIncome, periodExpenses];
         trendChart.update();
+
         const healthMsgDiv = document.getElementById('health-message');
         if (healthMsgDiv) {
             let msg = "", cls = "health-msg";
-            if (state.balance < 20) { msg = "Fondos bajos 😟"; cls = "health-msg bad"; }
-            else if (state.balance >= 200 && state.balance <= 700) { msg = "Ingresos suficientes 🙂"; cls = "health-msg"; }
-            else if (state.balance > 5000) { msg = "Fondos blindados 💰"; cls = "health-msg good"; }
-            else if (state.expenses > state.income) { msg = "Gastos elevados ⚠️"; cls = "health-msg bad"; }
-            else { msg = "Salud estable ✨"; cls = "health-msg good"; }
+            const periodBalance = periodIncome - periodExpenses;
+
+            if (periodBalance < 0) { 
+                msg = "Gasto superior a ingresos ⚠️"; cls = "health-msg bad"; 
+            } else if (periodBalance === 0 && periodIncome === 0) {
+                msg = "Sin actividad en este período"; cls = "health-msg";
+            } else { 
+                msg = "Balance positivo este período ✨"; cls = "health-msg good"; 
+            }
+            
             healthMsgDiv.innerHTML = `<span>${msg}</span>`; healthMsgDiv.className = cls;
         }
     }
