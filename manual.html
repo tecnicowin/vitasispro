@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manual de Usuario | Finance Assistant Pro</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        :root {
+            --primary: #7c6ff7;
+            --primary-glow: rgba(124, 111, 247, 0.15);
+            --bg: #070d1a;
+            --surface: rgba(255, 255, 255, 0.03);
+            --glass-border: rgba(255, 255, 255, 0.08);
+            --text-primary: #ffffff;
+            --text-secondary: #94a3b8;
+            --accent: #10b981;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text-primary);
+            font-family: 'Inter', sans-serif;
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        h1, h2, h3 { font-family: 'Outfit', sans-serif; }
+
+        .container { max-width: 800px; margin: 0 auto; padding: 40px 20px; }
+
+        /* Hero Section */
+        header {
+            text-align: center;
+            padding: 60px 0;
+            background: radial-gradient(circle at center, var(--primary-glow) 0%, transparent 70%);
+        }
+
+        .logo-container { margin-bottom: 20px; }
+        .logo-container img { width: 100px; border-radius: 20px; box-shadow: 0 0 30px var(--primary-glow); }
+
+        h1 { font-size: 2.5rem; margin-bottom: 10px; background: linear-gradient(to right, #fff, var(--primary)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .subtitle { color: var(--text-secondary); font-size: 1.1rem; }
+
+        /* Sections */
+        section {
+            background: var(--surface);
+            border: 1px solid var(--glass-border);
+            border-radius: 24px;
+            padding: 30px;
+            margin-bottom: 40px;
+            backdrop-filter: blur(10px);
+        }
+
+        .section-header {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+
+        .icon-box {
+            background: var(--primary-glow);
+            color: var(--primary);
+            padding: 10px;
+            border-radius: 12px;
+            display: flex;
+        }
+
+        h2 { font-size: 1.5rem; color: #fff; }
+
+        p { color: var(--text-secondary); margin-bottom: 20px; font-size: 0.95rem; }
+
+        /* Images */
+        .screenshot {
+            width: 100%;
+            border-radius: 16px;
+            border: 1px solid var(--glass-border);
+            margin: 20px 0;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+        }
+
+        .step-list { list-style: none; margin: 20px 0; }
+        .step-list li {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 15px;
+            color: var(--text-secondary);
+        }
+        .step-list li b { color: #fff; }
+        .step-list li::before {
+            content: "✓";
+            color: var(--accent);
+            font-weight: bold;
+        }
+
+        .tip-box {
+            background: rgba(16, 185, 129, 0.05);
+            border-left: 4px solid var(--accent);
+            padding: 15px 20px;
+            border-radius: 0 12px 12px 0;
+            font-size: 0.9rem;
+            color: #d1fae5;
+            margin: 20px 0;
+        }
+
+        footer {
+            text-align: center;
+            padding: 40px;
+            color: var(--text-dim);
+            font-size: 0.8rem;
+            border-top: 1px solid var(--glass-border);
+            margin-top: 60px;
+        }
+
+        .nav-back {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background: var(--surface);
+            border: 1px solid var(--glass-border);
+            color: #fff;
+            padding: 8px 15px;
+            border-radius: 12px;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.85rem;
+            backdrop-filter: blur(10px);
+            z-index: 100;
+        }
+
+        @media (max-width: 600px) {
+            h1 { font-size: 1.8rem; }
+            section { padding: 20px; }
+        }
+    </style>
+</head>
+<body>
+
+    <a href="index.html" class="nav-back">
+        <i data-lucide="chevron-left"></i> Volver a la App
+    </a>
+
+    <header>
+        <div class="logo-container">
+            <img src="app_icon_512.png" alt="Logo">
+        </div>
+        <h1>Finance Assistant Pro</h1>
+        <p class="subtitle">Guía de Usuario e Inteligencia Financiera</p>
+    </header>
+
+    <div class="container">
+        
+        <!-- Instalación -->
+        <section>
+            <div class="section-header">
+                <div class="icon-box"><i data-lucide="download"></i></div>
+                <h2>1. Instalación Instantánea</h2>
+            </div>
+            <p>Finance Assistant es una <b>PWA (Progressive Web App)</b>. No necesitas buscarla en la Play Store o App Store. Se instala directamente desde el navegador para mayor rapidez y privacidad.</p>
+            
+            <img src="C:\Users\Tecnicowin2018\.\.gemini\antigravity\brain\1fb82933-66e9-400d-bccb-4ce4aede600a\splash_screen_1776269481786.png" class="screenshot" alt="Splash Screen">
+            
+            <ul class="step-list">
+                <li><b>Abrir Enlace</b>: Accede a la URL web desde Chrome o Safari.</li>
+                <li><b>Instalar</b>: Toca el aviso "Instalar Aplicación" o "Añadir a pantalla de inicio".</li>
+                <li><b>Listo</b>: Aparecerá un icono premium en tu menú de aplicaciones.</li>
+            </ul>
+        </section>
+
+        <!-- Seguridad -->
+        <section>
+            <div class="section-header">
+                <div class="icon-box"><i data-lucide="shield-check"></i></div>
+                <h2>2. Seguridad y Biometría</h2>
+            </div>
+            <p>Tus datos financieros son sagrados. Por eso, la app nunca envía tu información a la nube; todo se queda en tu dispositivo.</p>
+            
+            <img src="C:\Users\Tecnicowin2018\.\.gemini\antigravity\brain\1fb82933-66e9-400d-bccb-4ce4aede600a\settings_security_1776269522222.png" class="screenshot" alt="Seguridad">
+            
+            <div class="tip-box">
+                <b>Recomendación</b>: Activa la <b>Autenticación Biométrica</b> en los ajustes. Podrás entrar con tu huella dactilar de forma rápida y segura.
+            </div>
+        </section>
+
+        <!-- Dashboard -->
+        <section>
+            <div class="section-header">
+                <div class="icon-box"><i data-lucide="layout-dashboard"></i></div>
+                <h2>3. Control de Gastos</h2>
+            </div>
+            <p>El dashboard principal te muestra tu saldo consolidado en dólares y bolívares al instante.</p>
+            
+            <img src="C:\Users\Tecnicowin2018\.\.gemini\antigravity\brain\1fb82933-66e9-400d-bccb-4ce4aede600a\dashboard_screen_1776269390847.png" class="screenshot" alt="Dashboard">
+            
+            <ul class="step-list">
+                <li><b>Buscar</b>: Usa la barra de búsqueda superior para encontrar gastos antiguos por nombre o categoría.</li>
+                <li><b>Filtrar</b>: Pulsa los botones "Hoy", "Semana" o "Mes" para ver resúmenes temporales.</li>
+                <li><b>Tasa BCV</b>: El balance se ajusta automáticamente según la tasa que configures en Ajustes.</li>
+            </ul>
+        </section>
+
+        <!-- Asistente -->
+        <section>
+            <div class="section-header">
+                <div class="icon-box"><i data-lucide="mic"></i></div>
+                <h2>4. Asistente con Voz</h2>
+            </div>
+            <p>Registrar gastos nunca fue tan fácil. Simplemente habla con tu asistente.</p>
+            
+            <img src="C:\Users\Tecnicowin2018\.\.gemini\antigravity\brain\1fb82933-66e9-400d-bccb-4ce4aede600a\assistant_panel_1776269426544.png" class="screenshot" alt="Asistente">
+            
+            <p>Di cosas como: <i>"Gasté 50 en comida"</i>. El asistente detectará la cantidad y la categoría. Por seguridad, te pedirá confirmación antes de guardar.</p>
+        </section>
+
+        <!-- Reportes -->
+        <section>
+            <div class="section-header">
+                <div class="icon-box"><i data-lucide="file-text"></i></div>
+                <h2>5. Reportes y Exportación</h2>
+            </div>
+            <p>Analiza tus hábitos de consumo con gráficos dinámicos y lleva tu información a Excel.</p>
+            
+            <img src="C:\Users\Tecnicowin2018\.\.gemini\antigravity\brain\1fb82933-66e9-400d-bccb-4ce4aede600a\reports_screen_1776269404418.png" class="screenshot" alt="Reportes">
+            
+            <ul class="step-list">
+                <li><b>Exportar CSV</b>: Toca el botón de descarga arriba a la derecha para obtener tu base de datos en formato Excel.</li>
+                <li><b>Salud Financiera</b>: La app te avisará si tu balance del periodo es positivo o si hay alertas de gastos altos.</li>
+            </ul>
+        </section>
+
+        <footer>
+            <p>© 2026 Finance Assistant Pro. Todos los derechos reservados.</p>
+            <p>Diseñado para potenciar tu libertad económica.</p>
+        </footer>
+
+    </div>
+
+    <script>
+        lucide.createIcons();
+    </script>
+</body>
+</html>
