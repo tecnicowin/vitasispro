@@ -4,9 +4,48 @@
 if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
         navigator.serviceWorker.register('./sw.js')
-            .then(reg => console.log('PWA Service Worker registrado ✅', reg))
+            .then(reg => {
+                console.log('PWA Service Worker registrado ✅', reg);
+                
+                // Detectar actualizaciones
+                reg.addEventListener('updatefound', () => {
+                    const newWorker = reg.installing;
+                    newWorker.addEventListener('statechange', () => {
+                        if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                            showUpdateToast(reg);
+                        }
+                    });
+                });
+            })
             .catch(err => console.log('Error registrando SW ❌', err));
     });
+
+    // Recargar cuando el nuevo SW tome el control
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+        window.location.reload();
+    });
+}
+
+function showUpdateToast(reg) {
+    const toast = document.createElement('div');
+    toast.className = 'toast update-toast active';
+    toast.style.bottom = '85px'; // Sobre la barra de navegación
+    toast.style.background = 'var(--primary)';
+    toast.style.cursor = 'pointer';
+    toast.innerHTML = `
+        <div style="display:flex; align-items:center; gap:10px;">
+            <i data-lucide="refresh-cw" style="width:16px; animation: spin 2s linear infinite;"></i>
+            <span>Nueva versión disponible. <b>Toca para actualizar</b></span>
+        </div>
+    `;
+    document.body.appendChild(toast);
+    if (window.lucide) window.lucide.createIcons();
+
+    toast.onclick = () => {
+        if (reg.waiting) {
+            reg.waiting.postMessage({ type: 'SKIP_WAITING' });
+        }
+    };
 }
 
 function initEventListeners() {
