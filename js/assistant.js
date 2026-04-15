@@ -148,6 +148,26 @@ function processCommand(text) {
         return;
     }
 
+    if (state.isAwaitingConfirmation) {
+        if (norm === 'si' || norm === 'confirmar' || norm === 'ok' || norm === 'listo') {
+            state.isAwaitingConfirmation = false;
+            completeTransaction(state.tempAmount, state.tempType, state.tempCategory, state.tempCurrency);
+            addChatMessage(`✅ Registro confirmado: ${state.tempType === 'income' ? 'Ingreso' : 'Gasto'} de ${state.tempCurrency === 'USD' ? formatCurrency(state.tempAmount) : state.tempAmount + ' Bs.'} en <b>${state.tempCategory}</b>.`, 'bot');
+            state.tempAmount = 0;
+            state.tempCategory = null;
+            state.tempType = null;
+        } else if (norm === 'no' || norm === 'cancelar') {
+            state.isAwaitingConfirmation = false;
+            state.tempAmount = 0;
+            state.tempCategory = null;
+            state.tempType = null;
+            addChatMessage("Acción cancelada. ¿En qué más puedo ayudarte?", 'bot');
+        } else {
+            addChatMessage("¿Confirmas el registro? Responde <b>Sí</b> para guardar o <b>No</b> para cancelar.", 'bot');
+        }
+        return;
+    }
+
     if (state.isAwaitingNewCategory) {
         const newName = text.trim();
         // Rechazar si es vacío o el propio disparador interno
@@ -289,9 +309,12 @@ function processCommand(text) {
         }
         let found = categories.find(c => norm.includes(normalize(c)));
         if (found) {
-            completeTransaction(state.tempAmount, 'expense', found, state.tempCurrency);
-            addChatMessage(`Registré el gasto de ${state.tempCurrency === 'USD' ? formatCurrency(state.tempAmount) : state.tempAmount+' Bs.'} en ${found}. ${getBalanceFeedback(state.balance)}`, 'bot');
-            state.isAwaitingCategory = false; state.tempAmount = 0; return;
+            state.tempCategory = found;
+            state.tempType = 'expense';
+            state.isAwaitingCategory = false;
+            state.isAwaitingConfirmation = true;
+            addChatMessage(`¿Confirmas el gasto de ${state.tempCurrency === 'USD' ? formatCurrency(state.tempAmount) : state.tempAmount+' Bs.'} en <b>${found}</b>?`, 'bot');
+            return;
         }
     }
 
@@ -320,8 +343,12 @@ function processCommand(text) {
         const amount = extractAmount(lower);
         if (amount) {
             state.isAwaitingCategory = false;
-            completeTransaction(amount, 'income', 'Ingreso', currentCurrency);
-            addChatMessage(`¡Excelente! Ingreso de ${currentCurrency === 'USD' ? formatCurrency(amount) : amount+' Bs.'} guardado. ${getBalanceFeedback(state.balance)}`, 'bot');
+            state.tempAmount = amount;
+            state.tempType = 'income';
+            state.tempCategory = 'Ingreso';
+            state.tempCurrency = currentCurrency;
+            state.isAwaitingConfirmation = true;
+            addChatMessage(`¿Confirmas el ingreso de ${currentCurrency === 'USD' ? formatCurrency(amount) : amount+' Bs.'}?`, 'bot');
         } else {
             addChatMessage("Dime la cantidad del ingreso, por favor.", 'bot');
         }

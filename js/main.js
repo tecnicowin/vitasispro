@@ -223,6 +223,28 @@ function initSettingsListeners() {
         });
     }
 
+    const addCatBtn = document.getElementById('add-cat-btn');
+    const newCatInput = document.getElementById('new-cat-input');
+    if (addCatBtn && newCatInput) {
+        addCatBtn.addEventListener('click', () => {
+            const name = newCatInput.value.trim();
+            if (!name) return;
+            if (!state.customCategories) state.customCategories = [];
+            if (state.customCategories.includes(name)) {
+                showToast("La categoría ya existe");
+                return;
+            }
+            state.customCategories.push(name);
+            newCatInput.value = '';
+            saveData();
+            renderCategories();
+            showToast("Categoría agregada");
+        });
+        newCatInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') addCatBtn.click();
+        });
+    }
+
     updateRateBtn?.addEventListener('click', fetchBCVRate);
     exitBtn?.addEventListener('click', () => { if (confirm("¿Estás seguro que deseas cerrar la sesión?")) { document.body.innerHTML = "<div style='display:flex; height:100vh; align-items:center; justify-content:center; background:#000; color:#fff;'>Aplicación cerrada localmente.</div>"; setTimeout(() => window.location.reload(), 3000); } });
 }

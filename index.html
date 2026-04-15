@@ -261,6 +261,35 @@
                 </section>
 
                 <section class="settings-group">
+                    <h4>Gestión de Categorías</h4>
+                    <p class="settings-hint">Toca <i data-lucide="x" style="width:11px;height:11px;display:inline;vertical-align:middle;"></i> para eliminar una categoría personalizada</p>
+                    <!-- Default categories (read-only) -->
+                    <div id="default-cats-list" class="cats-grid">
+                        <div class="cat-tag default-tag">Comida</div>
+                        <div class="cat-tag default-tag">Transporte</div>
+                        <div class="cat-tag default-tag">Ocio</div>
+                        <div class="cat-tag default-tag">Salud</div>
+                        <div class="cat-tag default-tag">Hogar</div>
+                        <div class="cat-tag default-tag">Celular</div>
+                        <div class="cat-tag default-tag">Personal</div>
+                        <div class="cat-tag default-tag">Tarjeta Credito</div>
+                        <div class="cat-tag default-tag">Cashea</div>
+                        <div class="cat-tag default-tag">Servicios</div>
+                        <div class="cat-tag default-tag">Educacion</div>
+                        <div class="cat-tag default-tag">Varios</div>
+                    </div>
+                    <!-- Custom categories (deletable) -->
+                    <div id="custom-cats-list" class="cats-grid" style="margin-top:8px;"></div>
+                    <!-- Add new custom category -->
+                    <div class="add-cat-row">
+                        <input type="text" id="new-cat-input" placeholder="Nueva categoría..." maxlength="25">
+                        <button id="add-cat-btn" class="icon-btn-small add-cat-btn">
+                            <i data-lucide="plus"></i>
+                        </button>
+                    </div>
+                </section>
+
+                <section class="settings-group">
                     <button class="chat-option-btn" id="save-settings-btn" style="width: 100%; margin-bottom: 15px;">Guardar Cambios</button>
                     <button id="exit-app-btn" class="logout-btn">
                         <i data-lucide="log-out"></i>

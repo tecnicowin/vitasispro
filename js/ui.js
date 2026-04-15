@@ -76,7 +76,36 @@ function updateUI() {
     if (bcvDisp) bcvDisp.textContent = state.bcvRate || '--';
 
     renderTransactions();
+    renderCategories();
     if (window.lucide) window.lucide.createIcons();
+}
+
+function renderCategories() {
+    const customList = document.getElementById('custom-cats-list');
+    if (!customList) return;
+
+    if (!state.customCategories || state.customCategories.length === 0) {
+        customList.innerHTML = '<p style="font-size:0.75rem; color:var(--text-dim); padding:5px;">Sin categorías personalizadas</p>';
+    } else {
+        customList.innerHTML = state.customCategories.map((cat, index) => `
+            <div class="cat-tag custom-tag">
+                <span>${cat}</span>
+                <button onclick="removeCategory(${index})" class="remove-cat-btn">
+                    <i data-lucide="x"></i>
+                </button>
+            </div>
+        `).join('');
+    }
+    if (window.lucide) window.lucide.createIcons();
+}
+
+function removeCategory(index) {
+    if (confirm(`¿Estás seguro de eliminar la categoría "${state.customCategories[index]}"?`)) {
+        state.customCategories.splice(index, 1);
+        saveData();
+        renderCategories();
+        showToast("Categoría eliminada");
+    }
 }
 
 function renderTransactions() {

@@ -1225,7 +1225,81 @@ canvas {
 }
 
 /* =====================
-   20. TRANSACTION BOTTOM SHEET
+   20. CATEGORY MANAGEMENT IN SETTINGS
+   ===================== */
+.settings-hint {
+    font-size: 0.65rem;
+    color: var(--text-dim);
+    margin-bottom: 8px;
+    font-style: italic;
+}
+
+.cats-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.cat-tag {
+    padding: 4px 10px;
+    border-radius: 8px;
+    font-size: 0.72rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    border: 1px solid var(--glass-border);
+}
+
+.default-tag {
+    background: var(--surface-light);
+    color: var(--text-secondary);
+}
+
+.custom-tag {
+    background: rgba(124, 111, 247, 0.1);
+    color: var(--primary-light);
+    border-color: var(--primary-glow);
+}
+
+.remove-cat-btn {
+    background: none;
+    border: none;
+    padding: 2px;
+    color: var(--expense);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+}
+
+.remove-cat-btn i { width: 10px; height: 10px; }
+
+.add-cat-row {
+    margin-top: 10px;
+    display: flex;
+    gap: 8px;
+}
+
+#new-cat-input {
+    flex: 1;
+    background: var(--surface);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-sm);
+    color: var(--text-primary);
+    font-size: 0.82rem;
+    padding: 8px 12px;
+    outline: none;
+}
+
+.add-cat-btn {
+    background: var(--secondary) !important;
+    color: white !important;
+    border-color: var(--secondary) !important;
+}
+
+/* =====================
+   21. TRANSACTION BOTTOM SHEET
    ===================== */
 .tx-overlay {
     position: fixed;
