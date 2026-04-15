@@ -74,12 +74,9 @@ function initEventListeners() {
             if (splash) splash.classList.remove('active');
 
             // ─── VERIFICACIÓN DE SEGURIDAD ─────────────────────
-            if (state.securityMode === 'pin' && state.pin) {
+            if (state.securityMode !== 'none') {
                 switchScreen('login-screen');
-                initPinScreen();
-            } else if (state.securityMode === 'biometric') {
-                switchScreen('login-screen');
-                initBiometric();
+                initLoginFlow();
             } else {
                 switchScreen('dashboard');
                 try { updateUI(); } catch(e) { console.error(e); }
@@ -190,9 +187,21 @@ function initSettingsListeners() {
     }
 
     secRadios.forEach(radio => {
-        radio.addEventListener('change', () => {
+        radio.addEventListener('change', async () => {
             if (radio.value === 'pin') { 
                 pinSetup.classList.remove('hidden'); 
+            } else if (radio.value === 'biometric') {
+                pinSetup.classList.add('hidden');
+                // Intentar registrar biometría si no existe
+                if (!state.biometricCredId) {
+                    const ok = confirm("¿Deseas registrar tu huella/rostro en este dispositivo?");
+                    if (ok) await registerBiometric();
+                    else {
+                        // Revertir a PIN si cancela
+                        document.getElementById('sec-pin').checked = true;
+                        pinSetup.classList.remove('hidden');
+                    }
+                }
             } else { 
                 pinSetup.classList.add('hidden'); 
             }
@@ -358,51 +367,77 @@ function initPinScreen() {
 }
 
 // =============================================
-// BIOMETRIC (WebAuthn) CON FALLBACK A PIN
+// LOGIN FLOW MANAGER
 // =============================================
-async function initBiometric() {
-    const title = document.querySelector('#login-screen h3');
+function initLoginFlow() {
+    const bioBtn = document.getElementById('biometric-login-btn');
+    const fallbackText = document.getElementById('biometric-fallback-text');
 
-    // Cambiar texto para indicar autenticación biométrica
-    if (title) title.textContent = 'Autenticando con huella...';
+    if (state.securityMode === 'biometric' && state.biometricCredId) {
+        bioBtn?.classList.remove('hidden');
+        fallbackText?.classList.remove('hidden');
+        bioBtn.onclick = initBiometric;
+        // Auto-intentar biometría
+        initBiometric();
+    } else {
+        bioBtn?.classList.add('hidden');
+        fallbackText?.classList.add('hidden');
+    }
+    
+    // Siempre cargar el PIN como capa activa/fallback
+    initPinScreen();
+}
 
+async function registerBiometric() {
     try {
-        if (!window.PublicKeyCredential) throw new Error('WebAuthn no soportado');
+        const challenge = new Uint8Array(32);
+        window.crypto.getRandomValues(challenge);
+        const userPath = state.userName || 'Usuario';
+        
+        const cred = await navigator.credentials.create({
+            publicKey: {
+                challenge,
+                rp: { name: "Finance Assistant" },
+                user: { id: new Uint8Array(16), name: userPath, displayName: userPath },
+                pubKeyCredParams: [{ alg: -7, type: "public-key" }, { alg: -257, type: "public-key" }],
+                timeout: 60000,
+                authenticatorSelection: { userVerification: "required" }
+            }
+        });
 
-        // Intentar autenticación con credencial almacenada o creación simple
-        const credId = state.biometricCredId
-            ? Uint8Array.from(atob(state.biometricCredId), c => c.charCodeAt(0))
-            : null;
-
-        if (credId) {
-            await navigator.credentials.get({
-                publicKey: {
-                    challenge: new Uint8Array(32),
-                    timeout: 60000,
-                    allowCredentials: [{ id: credId, type: 'public-key' }],
-                    userVerification: 'required'
-                }
-            });
-            // Autenticación exitosa
-            switchScreen('dashboard');
-            try { updateUI(); } catch(e) {}
-            showToast('Acceso biométrico verificado ✅');
-        } else {
-            // Sin credencial registrada → fallback a PIN si hay uno
-            throw new Error('Sin credencial biométrica registrada');
+        if (cred) {
+            state.biometricCredId = btoa(String.fromCharCode(...new Uint8Array(cred.rawId)));
+            state.securityMode = 'biometric';
+            saveData();
+            showToast("Biometría registrada con éxito ✅");
         }
     } catch (err) {
-        if (title) title.textContent = state.pin ? 'Ingresa tu PIN' : 'Ingresa tu PIN de seguridad';
-        // Fallback a PIN
-        if (state.pin) {
-            initPinScreen();
-        } else {
-            // Sin PIN ni biometría configurada correctamente → ir al dashboard
-            if (title) title.textContent = 'Sin seguridad configurada';
-            setTimeout(() => {
-                switchScreen('dashboard');
-                try { updateUI(); } catch(e) {}
-            }, 1500);
-        }
+        console.error(err);
+        showToast("Error al registrar biometría ❌");
+        document.getElementById('sec-pin').checked = true;
+    }
+}
+
+async function initBiometric() {
+    const title = document.querySelector('#login-screen h3');
+    try {
+        if (!state.biometricCredId) throw new Error('No cred');
+        const credId = Uint8Array.from(atob(state.biometricCredId), c => c.charCodeAt(0));
+
+        await navigator.credentials.get({
+            publicKey: {
+                challenge: new Uint8Array(32),
+                allowCredentials: [{ id: credId, type: 'public-key' }],
+                userVerification: 'required'
+            }
+        });
+
+        // Éxito
+        switchScreen('dashboard');
+        updateUI();
+        showToast('Identidad verificada ✅');
+    } catch (err) {
+        console.warn("Biometric failed/canceled", err);
+        if (title) title.textContent = 'Ingresa tu PIN';
     }
 }
