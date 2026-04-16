@@ -223,9 +223,12 @@ function processCommand(text) {
             } else {
                 if (!state.customCategories) state.customCategories = [];
                 if (!state.customCategories.includes(newCat)) state.customCategories.push(newCat);
-                resetAssistantStates();
-                completeTransaction(state.tempAmount, 'expense', newCat, state.tempCurrency);
-                addChatMessage(`✅ Categoría <b>${newCat}</b> creada y gasto registrado.`, 'bot');
+                state.tempCategory = newCat;
+                state.isAwaitingNewCategoryConfirm = false;
+                state.isAwaitingPaymentType = true;
+                saveData();
+                addChatMessage(`✅ Categoría <b>${newCat}</b> creada.`, 'bot');
+                showPaymentTypes();
             }
         } else if (norm === 'no' || norm === 'cancelar') {
             state.isAwaitingNewCategoryConfirm = false;

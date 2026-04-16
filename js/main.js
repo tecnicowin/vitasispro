@@ -162,6 +162,13 @@ function initSettingsEventListeners() {
         toggleMenu();
     });
 
+    document.getElementById('exit-app-btn')?.addEventListener('click', () => {
+        toggleMenu(); // Cerrar el panel
+        switchScreen('login-screen'); // Ir al login
+        initLoginFlow(); // Reiniciar el flujo de PIN/BIO
+        showToast("Sesión cerrada");
+    });
+
     // Categorías Gastos
     document.getElementById('add-cat-btn')?.addEventListener('click', () => {
         const input = document.getElementById('new-cat-input');
