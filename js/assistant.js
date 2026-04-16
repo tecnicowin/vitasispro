@@ -221,6 +221,10 @@ function fetchBCVRate() {
 function processCommand(text) {
     const lower = text.toLowerCase();
     const norm = normalize(text);
+    
+    // Detección de moneda al inicio para que esté disponible en todos los flujos
+    const isVES = /\bbs\.?\b/.test(norm) || norm.includes('bolivar') || norm.includes('bs');
+    let currentCurrency = isVES ? 'VES' : 'USD';
 
     // 1. Estados Críticos (Flujos activos)
     if (state.isAwaitingMoreInfo) {
@@ -454,9 +458,6 @@ function processCommand(text) {
 
     // 2. Comandos Globales
     if (norm.includes('cancelar') || norm.includes('olvida')) { resetAssistantStates(); addChatMessage("Acción cancelada.", 'bot'); return; }
-
-    const isVES = /\bbs\.?\b/.test(norm) || norm.includes('bolivar') || norm.includes('bs');
-    let currentCurrency = isVES ? 'VES' : 'USD';
 
     if (norm.includes('solicito saldo') || norm.includes('ver saldos') || (norm.includes('detalle') && norm.includes('saldo'))) {
         state.isAwaitingBalanceCategory = true;
