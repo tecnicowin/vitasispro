@@ -270,6 +270,38 @@ function initSettingsListeners() {
         showToast("Categoría agregada");
     });
 
+    // Income Categories Listeners
+    const incomeTypeSelect = document.getElementById('income-cat-type-select');
+    const incomeAddRow = document.getElementById('income-cat-add-row');
+    const incomeSubcatInput = document.getElementById('new-income-subcat-input');
+    const addIncomeSubcatBtn = document.getElementById('add-income-subcat-btn');
+
+    if (incomeTypeSelect) {
+        incomeTypeSelect.addEventListener('change', () => {
+            const val = incomeTypeSelect.value;
+            incomeAddRow.style.display = val ? 'flex' : 'none';
+        });
+    }
+
+    if (addIncomeSubcatBtn) {
+        addIncomeSubcatBtn.addEventListener('click', () => {
+            const type = incomeTypeSelect.value;
+            const name = incomeSubcatInput.value.trim();
+            if (!type || !name) return;
+            
+            if (!state.incomeCategories) state.incomeCategories = { bancos: [], inversiones: [], divisas: [] };
+            if (!state.incomeCategories[type]) state.incomeCategories[type] = [];
+            
+            if (state.incomeCategories[type].includes(name)) return showToast("Este nombre ya existe en esta categoría");
+            
+            state.incomeCategories[type].push(name);
+            incomeSubcatInput.value = '';
+            saveData();
+            renderIncomeCategories();
+            showToast("Cuenta agregada correctamente");
+        });
+    }
+
     document.getElementById('update-rate-btn')?.addEventListener('click', fetchBCVRate);
     document.getElementById('exit-app-btn')?.addEventListener('click', () => { 
         if (confirm("¿Cerrar sesión?")) { 

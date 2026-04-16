@@ -77,7 +77,73 @@ function updateUI() {
 
     renderTransactions();
     renderCategories();
+    renderIncomeCategories();
+    updateDistributionBalances();
     if (window.lucide) window.lucide.createIcons();
+}
+
+function updateDistributionBalances() {
+    // Calculamos balances por tipo (sumando todos los ingresos de esa subcategoría)
+    const bBalance = getBalanceByCategoryType('bancos');
+    const iBalance = getBalanceByCategoryType('inversiones');
+    const dBalance = getBalanceByCategoryType('divisas'); // Aunque no esté en el dashboard principal, se puede usar
+    
+    const distBancos = document.getElementById('dist-bancos');
+    const distInversiones = document.getElementById('dist-inversiones');
+    
+    if (distBancos) distBancos.textContent = formatCurrency(bBalance);
+    if (distInversiones) distInversiones.textContent = formatCurrency(iBalance);
+}
+
+function renderIncomeCategories() {
+    const list = document.getElementById('income-categories-list');
+    if (!list) return;
+
+    if (!state.incomeCategories) {
+        state.incomeCategories = { bancos: [], inversiones: [], divisas: [] };
+    }
+
+    const types = [
+        { id: 'bancos', label: 'Bancos' },
+        { id: 'inversiones', label: 'Inversiones' },
+        { id: 'divisas', label: 'Divisas' }
+    ];
+
+    let hasData = false;
+    list.innerHTML = types.map(type => {
+        const cats = state.incomeCategories[type.id] || [];
+        if (cats.length === 0) return '';
+        hasData = true;
+        return `
+            <div class="income-cat-group" style="margin-bottom:10px">
+                <div class="income-cat-group-title">${type.label}</div>
+                ${cats.map((cat, idx) => `
+                    <div class="income-subcat-item">
+                        <span class="income-subcat-name">${cat}</span>
+                        <button onclick="removeIncomeCategory('${type.id}', ${idx})" class="remove-cat-btn">
+                            <i data-lucide="x"></i>
+                        </button>
+                    </div>
+                `).join('')}
+            </div>
+        `;
+    }).join('');
+
+    if (!hasData) {
+        list.innerHTML = '<p class="settings-hint">No hay cuentas de ingresos/inversiones registradas</p>';
+    }
+    
+    if (window.lucide) window.lucide.createIcons();
+}
+
+function removeIncomeCategory(type, index) {
+    const catName = state.incomeCategories[type][index];
+    if (confirm(`¿Estás seguro de eliminar "${catName}"?`)) {
+        state.incomeCategories[type].splice(index, 1);
+        saveData();
+        renderIncomeCategories();
+        showToast("Cuenta eliminada");
+    }
 }
 
 function renderCategories() {

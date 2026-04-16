@@ -80,6 +80,60 @@ function addChatMessage(text, sender, showCategories = false) {
     }
 }
 
+function showIncomeDestTypes() {
+    const text = "¿Dónde registro este ingreso? Selecciona una categoría:";
+    const container = document.getElementById('chat-container');
+    const msg = document.createElement('div');
+    msg.className = `chat-message bot`;
+    
+    let content = `<div class="message-bubble">${text}</div>`;
+    content += `<div class="category-chip-list">
+        <button class="cat-chip" onclick="document.getElementById('assistant-input').value='bancos'; document.getElementById('send-btn').click();">
+            <i data-lucide="building-2"></i><span>Banco</span>
+        </button>
+        <button class="cat-chip" onclick="document.getElementById('assistant-input').value='inversiones'; document.getElementById('send-btn').click();">
+            <i data-lucide="trending-up"></i><span>Inversión</span>
+        </button>
+        <button class="cat-chip" onclick="document.getElementById('assistant-input').value='divisas'; document.getElementById('send-btn').click();">
+            <i data-lucide="wallet"></i><span>Divisas</span>
+        </button>
+    </div>`;
+
+    msg.innerHTML = content;
+    container.appendChild(msg);
+    container.scrollTop = container.scrollHeight;
+    if (window.lucide) window.lucide.createIcons();
+    speak(text);
+}
+
+function showIncomeSubDest(group) {
+    const labels = { bancos: 'los Bancos', inversiones: 'las Inversiones', divisas: 'las Divisas' };
+    const text = `Selecciona una subcategoría para ${labels[group]}:`;
+    const container = document.getElementById('chat-container');
+    const msg = document.createElement('div');
+    msg.className = `chat-message bot`;
+    
+    const subcats = (state.incomeCategories && state.incomeCategories[group]) ? state.incomeCategories[group] : [];
+    
+    let content = `<div class="message-bubble">${text}</div>`;
+    content += `<div class="category-chip-list">
+        ${subcats.map(s => `
+            <button class="cat-chip" onclick="document.getElementById('assistant-input').value='${s}'; document.getElementById('send-btn').click();">
+                <i data-lucide="tag"></i><span>${s}</span>
+            </button>
+        `).join('')}
+        <button class="cat-chip cat-chip-new" onclick="document.getElementById('assistant-input').value='nueva'; document.getElementById('send-btn').click();">
+            <i data-lucide="plus"></i><span>Nueva</span>
+        </button>
+    </div>`;
+
+    msg.innerHTML = content;
+    container.appendChild(msg);
+    container.scrollTop = container.scrollHeight;
+    if (window.lucide) window.lucide.createIcons();
+    speak(text);
+}
+
 function clearChat() {
     const container = document.getElementById('chat-container');
     if (container) container.innerHTML = '';
@@ -105,45 +159,93 @@ function requestNewCategory() {
     addChatMessage('🏷️ ¿Cómo quieres llamar a la nueva categoría? Escríbela a continuación.', 'bot');
 }
 
-function completeTransaction(a, t, c, currency = "USD") {
-    addTransaction(a, t, c, currency);
+function completeTransaction(a, t, c, currency = "USD", subType = null) {
+    addTransaction(a, t, c, currency, subType);
     updateUI();
     updateCharts();
-}
-
 function processCommand(text) {
     const lower = text.toLowerCase();
     const norm = normalize(text);
 
-    // =============================================
-    // PRIORIDAD MÁXIMA: Flujos de nueva categoría
-    // Se evalúan ANTES que cualquier otro comando
-    // para evitar que el nombre se interprete como
-    // un comando de gasto/ingreso/balance, etc.
-    // =============================================
-
     if (state.isAwaitingNewCategoryConfirm) {
         if (norm === 'si' || norm === 'confirmar' || norm === 'ok' || norm === 'listo') {
             const newCat = state.tempNewCategoryName;
-            if (!state.customCategories) state.customCategories = [];
-            if (!state.customCategories.includes(newCat)) {
-                state.customCategories.push(newCat);
+            
+            if (state.tempType === 'income') {
+                if (!state.incomeCategories) state.incomeCategories = { bancos: [], inversiones: [], divisas: [] };
+                if (!state.incomeCategories[state.tempIncomeGroup].includes(newCat)) {
+                    state.incomeCategories[state.tempIncomeGroup].push(newCat);
+                }
+                state.isAwaitingNewCategoryConfirm = false;
+                state.tempCategory = newCat;
+                state.isAwaitingConfirmation = true;
+                addChatMessage(`¿Confirmas el ingreso de ${state.tempCurrency === 'USD' ? formatCurrency(state.tempAmount) : state.tempAmount+' Bs.'} en <b>${newCat}</b>?`, 'bot');
+                return;
+            } else {
+                if (!state.customCategories) state.customCategories = [];
+                if (!state.customCategories.includes(newCat)) {
+                    state.customCategories.push(newCat);
+                }
+                state.isAwaitingNewCategoryConfirm = false;
+                state.isAwaitingCategory = false;
+                state.tempNewCategoryName = null;
+                completeTransaction(state.tempAmount, 'expense', newCat, state.tempCurrency);
+                addChatMessage(`✅ Categoría <b>${newCat}</b> creada y gasto de ${state.tempCurrency === 'USD' ? formatCurrency(state.tempAmount) : state.tempAmount + ' Bs.'} registrado. ${getBalanceFeedback(state.balance)}`, 'bot');
+                state.tempAmount = 0;
             }
-            state.isAwaitingNewCategoryConfirm = false;
-            state.isAwaitingCategory = false;
-            state.tempNewCategoryName = null;
-            completeTransaction(state.tempAmount, 'expense', newCat, state.tempCurrency);
-            addChatMessage(`✅ Categoría <b>${newCat}</b> creada y gasto de ${state.tempCurrency === 'USD' ? formatCurrency(state.tempAmount) : state.tempAmount + ' Bs.'} registrado. ${getBalanceFeedback(state.balance)}`, 'bot');
-            state.tempAmount = 0;
         } else if (norm === 'no' || norm === 'cancelar') {
             state.isAwaitingNewCategoryConfirm = false;
-            state.isAwaitingCategory = true;
             state.tempNewCategoryName = null;
-            addChatMessage('¿Cuál categoría prefieres entonces?', 'bot', true);
+            addChatMessage('¿Cuál prefieres entonces?', 'bot', true);
         } else {
-            // El usuario escribió otro nombre directamente → actualizar
             state.tempNewCategoryName = text.trim();
-            addChatMessage(`¿Confirmas la nueva categoría: <b>${state.tempNewCategoryName}</b>?<br><small style="opacity:0.6">Responde <b>Sí</b> para guardar o escribe otro nombre.</small>`, 'bot');
+            addChatMessage(`¿Confirmas el nombre: <b>${state.tempNewCategoryName}</b>?<br><small style="opacity:0.6">Responde <b>Sí</b> para guardar o escribe otro nombre.</small>`, 'bot');
+        }
+        return;
+    }
+
+    if (state.isAwaitingIncomeDestType) {
+        const categories = { 
+            'banco': 'bancos', 'bancos': 'bancos', 
+            'inversion': 'inversiones', 'inversiones': 'inversiones', 
+            'divisa': 'divisas', 'divisas': 'divisas' 
+        };
+        const found = categories[norm];
+        if (found) {
+            state.tempIncomeGroup = found;
+            state.isAwaitingIncomeDestType = false;
+            state.isAwaitingIncomeSubDest = true;
+            showIncomeSubDest(found);
+        } else if (norm === 'cancelar') {
+            state.isAwaitingIncomeDestType = false;
+            addChatMessage("Operación cancelada.", 'bot');
+        } else {
+            addChatMessage("Por favor selecciona una opción: Banco, Inversión o Divisas.", 'bot');
+        }
+        return;
+    }
+
+    if (state.isAwaitingIncomeSubDest) {
+        if (norm === 'nueva') {
+            state.isAwaitingIncomeSubDest = false;
+            state.isAwaitingNewCategory = true;
+            addChatMessage(`🏷️ ¿Cuál es el nombre del nuevo/a ${state.tempIncomeGroup.slice(0,-1)}?`, 'bot');
+            return;
+        }
+        
+        // Verificar si es una existente
+        const group = state.tempIncomeGroup;
+        const subcats = state.incomeCategories[group] || [];
+        const found = subcats.find(s => normalize(s) === norm);
+        
+        if (found) {
+            state.tempCategory = found;
+            state.isAwaitingIncomeSubDest = false;
+            state.isAwaitingConfirmation = true;
+            addChatMessage(`¿Confirmas el ingreso de ${state.tempCurrency === 'USD' ? formatCurrency(state.tempAmount) : state.tempAmount+' Bs.'} en <b>${found}</b>?`, 'bot');
+        } else {
+            // No encontrado, preguntar de nuevo o sugerir "nueva"
+            addChatMessage(`No encontré esa subcategoría. Prueba seleccionándola o escribe <b>Nueva</b>.`, 'bot');
         }
         return;
     }
@@ -151,11 +253,21 @@ function processCommand(text) {
     if (state.isAwaitingConfirmation) {
         if (norm === 'si' || norm === 'confirmar' || norm === 'ok' || norm === 'listo') {
             state.isAwaitingConfirmation = false;
-            completeTransaction(state.tempAmount, state.tempType, state.tempCategory, state.tempCurrency);
-            addChatMessage(`✅ Registro confirmado: ${state.tempType === 'income' ? 'Ingreso' : 'Gasto'} de ${state.tempCurrency === 'USD' ? formatCurrency(state.tempAmount) : state.tempAmount + ' Bs.'} en <b>${state.tempCategory}</b>.`, 'bot');
+            completeTransaction(state.tempAmount, state.tempType, state.tempCategory, state.tempCurrency, state.tempIncomeGroup);
+            
+            // Resultado detallado según solicitud
+            const catBalance = state.transactions
+                .filter(t => t.type === 'income' && t.category === state.tempCategory)
+                .reduce((sum, t) => sum + t.amount, 0);
+
+            addChatMessage(`✅ Registro confirmado: ${state.tempType === 'income' ? 'Ingreso' : 'Gasto'} de ${state.tempCurrency === 'USD' ? formatCurrency(state.tempAmount) : state.tempAmount + ' Bs.'} en <b>${state.tempCategory}</b>.
+            <br><small>Saldo en ${state.tempCategory}: ${formatCurrency(catBalance)}</small>
+            <br><small>Total Ingresos: ${formatCurrency(state.income)}</small>`, 'bot');
+            
             state.tempAmount = 0;
             state.tempCategory = null;
             state.tempType = null;
+            state.tempIncomeGroup = null;
         } else if (norm === 'no' || norm === 'cancelar') {
             state.isAwaitingConfirmation = false;
             state.tempAmount = 0;
@@ -170,15 +282,14 @@ function processCommand(text) {
 
     if (state.isAwaitingNewCategory) {
         const newName = text.trim();
-        // Rechazar si es vacío o el propio disparador interno
-        if (!newName || newName === '__nueva__') {
-            addChatMessage('Por favor escribe el nombre de la nueva categoría.', 'bot');
+        if (!newName) {
+            addChatMessage('Por favor escribe el nombre.', 'bot');
             return;
         }
         state.tempNewCategoryName = newName;
         state.isAwaitingNewCategory = false;
         state.isAwaitingNewCategoryConfirm = true;
-        addChatMessage(`¿Confirmas la nueva categoría: <b>${newName}</b>?<br><small style="opacity:0.6">Responde <b>Sí</b> para guardar o escribe otro nombre para cambiarlo.</small>`, 'bot');
+        addChatMessage(`¿Confirmas el registro de <b>${newName}</b>?<br><small style="opacity:0.6">Responde <b>Sí</b> para guardar o escribe otro nombre.</small>`, 'bot');
         return;
     }
 
@@ -206,6 +317,8 @@ function processCommand(text) {
         state.isAwaitingRate = false;
         state.isAwaitingNewCategory = false;
         state.isAwaitingNewCategoryConfirm = false;
+        state.isAwaitingIncomeDestType = false;
+        state.isAwaitingIncomeSubDest = false;
         state.tempNewCategoryName = null;
         state.tempAmount = 0;
         addChatMessage("Acción cancelada. ¿En qué más puedo ayudarte?", 'bot');
@@ -258,7 +371,29 @@ function processCommand(text) {
                 return;
             }
         } else if (norm.includes('ingreso') || norm.includes('ganado') || norm.includes('gane')) {
-            addChatMessage(`El total de tus ingresos es ${formatCurrency(state.income)} (${formatVES(state.income)}).`, 'bot');
+            const incs = state.transactions.filter(t => t.type === 'income');
+            if (incs.length === 0) {
+                addChatMessage(`No tienes ingresos registrados todavía.`, 'bot');
+            } else {
+                const subcats = {};
+                incs.forEach(e => subcats[e.category] = (subcats[e.category] || 0) + e.amount);
+                
+                let summary = "<b>Resumen de tus ingresos:</b><br>";
+                let hasPositive = false;
+                Object.keys(subcats).forEach(c => {
+                    if (subcats[c] > 0) {
+                        summary += `• ${c}: ${formatCurrency(subcats[c])} (${formatVES(subcats[c])})<br>`;
+                        hasPositive = true;
+                    }
+                });
+                
+                if (!hasPositive) {
+                    addChatMessage(`No tienes ingresos con saldo positivo actualmente.`, 'bot');
+                } else {
+                    summary += `<br>Total Ingresos: ${formatCurrency(state.income)} (${formatVES(state.income)})`;
+                    addChatMessage(summary, 'bot');
+                }
+            }
             if (!state.isAwaitingCategory) return;
         }
     }
@@ -342,13 +477,11 @@ function processCommand(text) {
     if (norm.includes('ingreso') || norm.includes('gane') || norm.includes('recibi') || norm.includes('entro') || norm.includes('pago') || norm.includes('cobre') || norm.includes('pagaron') || norm.includes('transfirieron') || norm.includes('cancelaron')) {
         const amount = extractAmount(lower);
         if (amount) {
-            state.isAwaitingCategory = false;
             state.tempAmount = amount;
             state.tempType = 'income';
-            state.tempCategory = 'Ingreso';
             state.tempCurrency = currentCurrency;
-            state.isAwaitingConfirmation = true;
-            addChatMessage(`¿Confirmas el ingreso de ${currentCurrency === 'USD' ? formatCurrency(amount) : amount+' Bs.'}?`, 'bot');
+            state.isAwaitingIncomeDestType = true;
+            showIncomeDestTypes();
         } else {
             addChatMessage("Dime la cantidad del ingreso, por favor.", 'bot');
         }

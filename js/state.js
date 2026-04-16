@@ -16,6 +16,9 @@ let state = {
     isAwaitingRate: false,
     isAwaitingNewCategory: false,       // Flujo: crear nueva categoría
     isAwaitingNewCategoryConfirm: false, // Flujo: confirmar nombre
+    isAwaitingIncomeDestType: false,     // Flujo: elegir Banco/Inversión/Divisa
+    isAwaitingIncomeSubDest: false,      // Flujo: elegir subcategoría específica
+    tempIncomeGroup: null,               // 'bancos', 'inversiones', 'divisas'
     tempNewCategoryName: null,           // Nombre temporal de la nueva cat.
     tempAmount: 0,
     tempType: null,
@@ -23,7 +26,12 @@ let state = {
     pin: null,
     securityMode: 'none', 
     theme: 'dark',
-    customCategories: []                 // Categorías creadas por el usuario
+    customCategories: [],                // Categorías creadas por el usuario
+    incomeCategories: {                  // Estructura para ingresos/inversiones
+        bancos: [],
+        inversiones: [],
+        divisas: []
+    }
 };
 
 const STORAGE_KEY = 'finance_data';
@@ -40,7 +48,7 @@ function saveData() {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
 }
 
-function addTransaction(amount, type, category, currency = 'USD') {
+function addTransaction(amount, type, category, currency = 'USD', subCategoryType = null) {
     let usdAmount = amount;
     if (currency === 'VES' && state.bcvRate) {
         usdAmount = amount / state.bcvRate;
@@ -53,6 +61,7 @@ function addTransaction(amount, type, category, currency = 'USD') {
         currency: currency,
         type: type,
         category: category,
+        subCategoryType: subCategoryType, // Bancos, Inversiones, Divisas (para ingresos)
         date: new Date().toLocaleDateString('es-ES', { day: '2-digit', month: 'short' }),
         timestamp: Date.now()
     };
@@ -61,6 +70,12 @@ function addTransaction(amount, type, category, currency = 'USD') {
     else { state.expenses += usdAmount; state.balance -= usdAmount; }
     saveData();
     return transaction;
+}
+
+function getBalanceByCategoryType(type) {
+    return state.transactions
+        .filter(t => t.type === 'income' && t.subCategoryType === type)
+        .reduce((sum, t) => sum + t.amount, 0);
 }
 
 function recalcTotals() {

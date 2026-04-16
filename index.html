@@ -92,6 +92,19 @@
                         <div class="balance-amount main" id="main-balance">$0.00</div>
                         <div class="balance-amount secondary" id="secondary-balance">Bs. 0.00</div>
                     </div>
+                    <!-- Distribution List -->
+                    <div class="distribution-list">
+                        <div class="dist-item dist-bancos">
+                            <span class="dist-dot green"></span>
+                            <span class="dist-label">Bancos:</span>
+                            <span class="dist-value" id="dist-bancos">$0.00</span>
+                        </div>
+                        <div class="dist-item dist-inversiones">
+                            <span class="dist-dot yellow"></span>
+                            <span class="dist-label">Cuenta de Inversión:</span>
+                            <span class="dist-value" id="dist-inversiones">$0.00</span>
+                        </div>
+                    </div>
                     <div class="balance-stats">
                         <div class="stat income">
                             <i data-lucide="arrow-up-circle"></i>
@@ -291,7 +304,31 @@
                 </section>
 
                 <section class="settings-group">
-                    <h4>Gestión de Categorías</h4>
+                    <h4>Categorías de Ingresos e Inversiones</h4>
+                    <p class="settings-hint">Gestiona tus cuentas de Banco, Inversión y Divisas</p>
+                    
+                    <div class="income-cats-flow">
+                        <select id="income-cat-type-select">
+                            <option value="">Selecciona tipo para agregar...</option>
+                            <option value="bancos">Bancos</option>
+                            <option value="inversiones">Inversiones</option>
+                            <option value="divisas">Divisas</option>
+                        </select>
+                        <div class="add-cat-row" id="income-cat-add-row" style="margin-top: 10px; display: none;">
+                            <input type="text" id="new-income-subcat-input" placeholder="Nombre (Ej: Banesco)...">
+                            <button id="add-income-subcat-btn" class="icon-btn-small add-cat-btn">
+                                <i data-lucide="plus"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div id="income-categories-list" class="income-cats-container" style="margin-top: 15px;">
+                        <!-- Poblado por JS -->
+                    </div>
+                </section>
+
+                <section class="settings-group">
+                    <h4>Gestión de Categorías de Gastos</h4>
                     <p class="settings-hint">Toca <i data-lucide="x" style="width:11px;height:11px;display:inline;vertical-align:middle;"></i> para eliminar una categoría personalizada</p>
                     <!-- Default categories (read-only) -->
                     <div id="default-cats-list" class="cats-grid">
