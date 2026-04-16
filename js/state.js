@@ -19,12 +19,18 @@ let state = {
     isAwaitingIncomeDestType: false,
     isAwaitingIncomeSubDest: false,
     isAwaitingPaymentType: false,        // Flujo: elegir fuente de pago (Bancos...)
-    isAwaitingPaymentAccount: false,     // Flujo: elegir cuenta específica
     isAwaitingBalanceCategory: false,    // Flujo: elegir categoría para ver saldos
+    isAwaitingTransferAmount: false,     // Nuevo: Flujo Traspaso
+    isAwaitingTransferFromType: false,
+    isAwaitingTransferFromAccount: false,
+    isAwaitingTransferToType: false,
+    isAwaitingTransferToAccount: false,
     isAwaitingConfirmation: false,
     tempIncomeGroup: null,               // Para ingresos
-    tempSourceGroup: null,               // Para gastos (fuente: bancos...)
-    tempSourceAccount: null,             // Para gastos (específica: Banesco)
+    tempSourceGroup: null,               // Para gastos / Origen traspaso
+    tempSourceAccount: null,             // Para gastos / Origen traspaso
+    tempDestGroup: null,                 // Destino traspaso
+    tempDestAccount: null,               // Destino traspaso
     tempNewCategoryName: null,
     tempAmount: 0,
     tempType: null,
@@ -88,18 +94,20 @@ function getBalanceByCategoryType(type) {
     return state.transactions
         .filter(t => t.subCategoryType === type)
         .reduce((sum, t) => {
-            if (t.type === 'income') return sum + t.amount;
-            if (t.type === 'expense') return sum - t.amount;
+            if (t.type === 'income' || t.type === 'transfer_in') return sum + t.amount;
+            if (t.type === 'expense' || t.type === 'transfer_out') return sum - t.amount;
             return sum;
         }, 0);
 }
 
 function getBalanceByAccount(name) {
     return state.transactions.reduce((sum, t) => {
-        // En ingresos, category es el nombre de la cuenta
+        // En ingresos y entrada de traspaso, o bien category es el nombre o bien sourceAccount
         if (t.type === 'income' && t.category === name) return sum + t.amount;
-        // En gastos, sourceAccount es el nombre de la cuenta
+        if (t.type === 'transfer_in' && t.category === name) return sum + t.amount;
+        // En gastos y salida de traspaso
         if (t.type === 'expense' && t.sourceAccount === name) return sum - t.amount;
+        if (t.type === 'transfer_out' && t.sourceAccount === name) return sum - t.amount;
         return sum;
     }, 0);
 }
@@ -125,10 +133,14 @@ function recalcTotals() {
             state.income += t.amount;
             state.balance += t.amount;
             if (isCurrentMonth) state.monthlyIncome += t.amount;
-        } else {
+        } else if (t.type === 'expense') {
             state.expenses += t.amount;
             state.balance -= t.amount;
             if (isCurrentMonth) state.monthlyExpenses += t.amount;
+        } else if (t.type === 'transfer_in') {
+            state.balance += t.amount;
+        } else if (t.type === 'transfer_out') {
+            state.balance -= t.amount;
         }
     });
 }

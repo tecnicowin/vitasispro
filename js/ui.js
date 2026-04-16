@@ -226,21 +226,35 @@ function renderTransactions(searchQuery = '') {
 }
 
 function createTransactionHTML(t) {
-    const isExp = t.type === 'expense';
-    const color = isExp ? 'rgba(239, 68, 68, 0.1); color: #ef4444;' : 'rgba(16, 185, 129, 0.1); color: #10b981;';
+    let color, icon, sign, typeClass, amountClass;
     const cur = t.currency || 'USD';
     const origAmt = t.originalAmount !== undefined ? t.originalAmount : t.amount;
     const mainDisplay = cur === 'USD' ? formatCurrency(t.amount) : `${origAmt.toLocaleString('es-VE')} Bs.`;
     const secondaryDisplay = cur === 'USD' ? formatVES(t.amount) : formatCurrency(t.amount);
+
+    if (t.type === 'expense' || t.type === 'transfer_out') {
+        color = 'rgba(239, 68, 68, 0.1); color: #ef4444;';
+        icon = t.type === 'expense' ? 'shopping-bag' : 'refresh-cw';
+        sign = '-';
+        typeClass = 'expense-item';
+        amountClass = 'amount-expense';
+    } else {
+        color = t.type === 'income' ? 'rgba(16, 185, 129, 0.1); color: #10b981;' : 'rgba(59, 130, 246, 0.1); color: #3b82f6;';
+        icon = t.type === 'income' ? 'trending-up' : 'refresh-cw';
+        sign = '+';
+        typeClass = 'income-item';
+        amountClass = 'amount-income';
+    }
+
     return `
-        <div class="transaction-item ${isExp ? 'expense-item' : 'income-item'}" data-id="${t.id}">
-            <div class="item-icon" style="${color}"><i data-lucide="${isExp ? 'shopping-bag' : 'trending-up'}"></i></div>
+        <div class="transaction-item ${typeClass}" data-id="${t.id}">
+            <div class="item-icon" style="${color}"><i data-lucide="${icon}"></i></div>
             <div class="item-info">
                 <div class="item-category">${t.category}</div>
                 <div class="item-date">${t.date}</div>
             </div>
             <div class="item-amount-group">
-                <div class="item-amount ${isExp ? 'amount-expense' : 'amount-income'}">${isExp ? '-' : '+'}${mainDisplay}</div>
+                <div class="item-amount ${amountClass}">${sign}${mainDisplay}</div>
                 <div style="font-size: 0.72rem; color: var(--text-secondary); margin-top: 2px">${secondaryDisplay}</div>
             </div>
             <div class="item-action-hint"><i data-lucide="chevron-right"></i></div>

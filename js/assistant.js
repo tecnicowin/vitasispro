@@ -154,6 +154,34 @@ function clearChat() {
     if (container) container.innerHTML = '';
 }
 
+function showTransferFromTypes() {
+    addChatMessage("¿De qué categoría vas a ENVIAR los fondos?", 'bot', false, [
+        { label: 'Banco', val: 'bancos', icon: 'building-2' },
+        { label: 'Inversión', val: 'inversiones', icon: 'trending-up' },
+        { label: 'Divisas', val: 'divisas', icon: 'wallet' }
+    ]);
+}
+
+function showTransferFromAccounts(group) {
+    const subcats = (state.incomeCategories && state.incomeCategories[group]) ? state.incomeCategories[group] : [];
+    const chips = subcats.map(s => ({ label: s, val: s, icon: 'log-out' }));
+    addChatMessage(`Selecciona la cuenta de ORIGEN (${group}):`, 'bot', false, chips);
+}
+
+function showTransferToTypes() {
+    addChatMessage("¿A qué categoría vas a ENVIAR los fondos?", 'bot', false, [
+        { label: 'Banco', val: 'bancos', icon: 'building-2' },
+        { label: 'Inversión', val: 'inversiones', icon: 'trending-up' },
+        { label: 'Divisas', val: 'divisas', icon: 'wallet' }
+    ]);
+}
+
+function showTransferToAccounts(group) {
+    const subcats = (state.incomeCategories && state.incomeCategories[group]) ? state.incomeCategories[group] : [];
+    const chips = subcats.map(s => ({ label: s, val: s, icon: 'log-in' }));
+    addChatMessage(`Selecciona la cuenta de DESTINO (${group}):`, 'bot', false, chips);
+}
+
 function resetAssistantStates() {
     state.isAwaitingCategory = false;
     state.isAwaitingMoreInfo = false;
@@ -165,10 +193,17 @@ function resetAssistantStates() {
     state.isAwaitingPaymentType = false;
     state.isAwaitingPaymentAccount = false;
     state.isAwaitingBalanceCategory = false;
+    state.isAwaitingTransferAmount = false;
+    state.isAwaitingTransferFromType = false;
+    state.isAwaitingTransferFromAccount = false;
+    state.isAwaitingTransferToType = false;
+    state.isAwaitingTransferToAccount = false;
     state.isAwaitingConfirmation = false;
     state.tempNewCategoryName = null;
     state.tempSourceGroup = null;
     state.tempSourceAccount = null;
+    state.tempDestGroup = null;
+    state.tempDestAccount = null;
     state.tempIncomeGroup = null;
     state.tempAmount = 0;
 }
@@ -299,22 +334,103 @@ function processCommand(text) {
         return;
     }
 
+    if (state.isAwaitingTransferAmount) {
+        let amt = extractAmount(lower);
+        if (amt) {
+            state.tempAmount = amt;
+            state.tempCurrency = currentCurrency;
+            state.isAwaitingTransferAmount = false;
+            state.isAwaitingTransferFromType = true;
+            showTransferFromTypes();
+        } else { addChatMessage("Por favor indica el monto a traspasar.", 'bot'); }
+        return;
+    }
+
+    if (state.isAwaitingTransferFromType) {
+        const mapping = { 'banco': 'bancos', 'bancos': 'bancos', 'inversion': 'inversiones', 'inversiones': 'inversiones', 'divisa': 'divisas', 'divisas': 'divisas' };
+        const found = mapping[norm];
+        if (found) {
+            state.tempSourceGroup = found;
+            state.isAwaitingTransferFromType = false;
+            state.isAwaitingTransferFromAccount = true;
+            showTransferFromAccounts(found);
+        } else { addChatMessage("Selecciona: Banco, Inversión o Divisas.", 'bot'); }
+        return;
+    }
+
+    if (state.isAwaitingTransferFromAccount) {
+        const subcats = state.incomeCategories[state.tempSourceGroup] || [];
+        const found = subcats.find(s => normalize(s) === norm);
+        if (found) {
+            state.tempSourceAccount = found;
+            state.isAwaitingTransferFromAccount = false;
+            state.isAwaitingTransferToType = true;
+            showTransferToTypes();
+        } else { addChatMessage("Selecciona una cuenta de origen válida.", 'bot'); }
+        return;
+    }
+
+    if (state.isAwaitingTransferToType) {
+        const mapping = { 'banco': 'bancos', 'bancos': 'bancos', 'inversion': 'inversiones', 'inversiones': 'inversiones', 'divisa': 'divisas', 'divisas': 'divisas' };
+        const found = mapping[norm];
+        if (found) {
+            state.tempDestGroup = found;
+            state.isAwaitingTransferToType = false;
+            state.isAwaitingTransferToAccount = true;
+            showTransferToAccounts(found);
+        } else { addChatMessage("Selecciona: Banco, Inversión o Divisas.", 'bot'); }
+        return;
+    }
+
+    if (state.isAwaitingTransferToAccount) {
+        const subcats = state.incomeCategories[state.tempDestGroup] || [];
+        const found = subcats.find(s => normalize(s) === norm);
+        if (found) {
+            state.tempDestAccount = found;
+            state.isAwaitingTransferToAccount = false;
+            state.isAwaitingConfirmation = true;
+            state.tempType = 'transfer';
+            addChatMessage(`¿Confirmas el traspaso de <b>${state.tempCurrency === 'USD' ? formatCurrency(state.tempAmount) : state.tempAmount+' Bs.'}</b> de <b>${state.tempSourceAccount}</b> a <b>${found}</b>?`, 'bot', false, [
+                { label: 'Sí, confirmar', val: 'si', icon: 'check' },
+                { label: 'Cancelar', val: 'no', icon: 'x' }
+            ]);
+        } else { addChatMessage("Selecciona una cuenta de destino válida.", 'bot'); }
+        return;
+    }
+
     if (state.isAwaitingConfirmation) {
         if (norm === 'si' || norm === 'confirmar' || norm === 'ok') {
-            const type = state.tempType;
-            const cat = state.tempCategory;
             const amt = state.tempAmount;
             const cur = state.tempCurrency;
-            const group = state.tempType === 'income' ? state.tempIncomeGroup : state.tempSourceGroup;
-            const source = state.tempSourceAccount;
             
-            resetAssistantStates();
-            completeTransaction(amt, type, cat, cur, group, source);
-            
-            const accountBal = source ? getBalanceByAccount(source) : (type === 'income' ? getBalanceByAccount(cat) : null);
-            let feedback = `✅ Registro confirmado en <b>${cat}</b>.`;
-            if (accountBal !== null) feedback += `<br>Saldo actual en ${source || cat}: ${formatCurrency(accountBal)} (${formatVES(accountBal)})`;
-            addChatMessage(feedback, 'bot');
+            if (state.tempType === 'transfer') {
+                const fromAcc = state.tempSourceAccount;
+                const fromGroup = state.tempSourceGroup;
+                const toAcc = state.tempDestAccount;
+                const toGroup = state.tempDestGroup;
+
+                resetAssistantStates();
+                // 1. Salida
+                addTransaction(amt, 'transfer_out', `Traspaso a ${toAcc}`, cur, fromGroup, fromAcc);
+                // 2. Entrada
+                addTransaction(amt, 'transfer_in', toAcc, cur, toGroup, null);
+                
+                updateUI(); updateCharts();
+                addChatMessage(`✅ Traspaso completado:<br><b>${fromAcc}</b> → <b>${toAcc}</b><br>Monto: ${cur==='USD'?formatCurrency(amt):amt+' Bs.'}`, 'bot');
+            } else {
+                const type = state.tempType;
+                const cat = state.tempCategory;
+                const group = state.tempType === 'income' ? state.tempIncomeGroup : state.tempSourceGroup;
+                const source = state.tempSourceAccount;
+                
+                resetAssistantStates();
+                completeTransaction(amt, type, cat, cur, group, source);
+                
+                const accountBal = source ? getBalanceByAccount(source) : (type === 'income' ? getBalanceByAccount(cat) : null);
+                let feedback = `✅ Registro confirmado en <b>${cat}</b>.`;
+                if (accountBal !== null) feedback += `<br>Saldo actual en ${source || cat}: ${formatCurrency(accountBal)} (${formatVES(accountBal)})`;
+                addChatMessage(feedback, 'bot');
+            }
         } else if (norm === 'no' || norm === 'cancelar') {
             resetAssistantStates();
             addChatMessage("Acción cancelada.", 'bot');
@@ -345,6 +461,12 @@ function processCommand(text) {
     if (norm.includes('solicito saldo') || norm.includes('ver saldos') || (norm.includes('detalle') && norm.includes('saldo'))) {
         state.isAwaitingBalanceCategory = true;
         showBalanceCategoryOptions();
+        return;
+    }
+
+    if (norm.includes('traspaso') || norm.includes('traspasar') || norm.includes('mover dinero')) {
+        state.isAwaitingTransferAmount = true;
+        addChatMessage("🔄 Iniciando Traspaso. ¿Qué monto deseas mover?", 'bot');
         return;
     }
 
