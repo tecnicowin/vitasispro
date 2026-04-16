@@ -85,6 +85,56 @@ function initEventListeners() {
 
     // Ajustes Listeners
     initSettingsEventListeners();
+    // Transaction Sheet Listeners
+    initTransactionSheetListeners();
+}
+
+function initTransactionSheetListeners() {
+    const sheet = document.getElementById('tx-action-sheet');
+    const overlay = document.getElementById('tx-sheet-overlay');
+    const closeBtn = document.getElementById('sheet-close-btn');
+    const editBtn = document.getElementById('sheet-edit-btn');
+    const deleteBtn = document.getElementById('sheet-delete-btn');
+    const cancelEditBtn = document.getElementById('edit-cancel-btn');
+    const form = document.getElementById('edit-tx-form');
+
+    const close = () => { sheet?.classList.remove('active'); overlay?.classList.remove('active'); };
+    overlay?.addEventListener('click', close);
+    closeBtn?.addEventListener('click', close);
+    cancelEditBtn?.addEventListener('click', () => {
+        document.getElementById('sheet-edit-view').classList.add('hidden');
+        document.getElementById('sheet-info-view').classList.remove('hidden');
+    });
+
+    editBtn?.addEventListener('click', () => {
+        document.getElementById('sheet-info-view').classList.add('hidden');
+        document.getElementById('sheet-edit-view').classList.remove('hidden');
+    });
+
+    deleteBtn?.addEventListener('click', () => {
+        const id = Number(form.dataset.id);
+        if (confirm("¿Estás seguro de eliminar este movimiento?")) {
+            deleteTransaction(id);
+            close();
+            updateUI();
+            showToast("Movimiento eliminado");
+        }
+    });
+
+    form?.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const id = Number(form.dataset.id);
+        const newAmt = parseFloat(document.getElementById('edit-tx-amount').value);
+        const newType = document.getElementById('edit-tx-type').value;
+        const newCat = document.getElementById('edit-tx-category').value;
+        const newCur = document.getElementById('edit-tx-currency').value;
+
+        if (editTransaction(id, newAmt, newType, newCat, newCur)) {
+            close();
+            updateUI();
+            showToast("Cambios guardados");
+        }
+    });
 }
 
 function initSettingsEventListeners() {
