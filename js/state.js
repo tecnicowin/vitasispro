@@ -58,6 +58,7 @@ function loadData() {
         if (!state.incomeCategories.inversiones) state.incomeCategories.inversiones = [];
         if (!state.incomeCategories.divisas) state.incomeCategories.divisas = [];
     }
+    recalcTotals();
     return state;
 }
 
@@ -84,8 +85,7 @@ function addTransaction(amount, type, category, currency = 'USD', subCategoryTyp
         timestamp: Date.now()
     };
     state.transactions.push(transaction);
-    if (type === 'income') { state.income += usdAmount; state.balance += usdAmount; }
-    else { state.expenses += usdAmount; state.balance -= usdAmount; }
+    recalcTotals();
     saveData();
     return transaction;
 }
