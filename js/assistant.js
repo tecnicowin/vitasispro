@@ -121,11 +121,27 @@ function resetAssistantStates() {
     state.tempAmount = 0;
 }
 
+function fetchBCVRate() {
+    const manualRate = prompt("Por favor, ingresa la tasa oficial del BCV:");
+    if (manualRate && !isNaN(manualRate)) {
+        state.bcvRate = parseFloat(manualRate);
+        state.lastRateUpdate = new Date().toLocaleDateString();
+        saveData(); updateUI();
+        showToast("Tasa BCV actualizada exitosamente");
+    }
+}
+
 function processCommand(text) {
     const lower = text.toLowerCase();
     const norm = normalize(text);
 
     // 1. Estados Críticos (Flujos activos)
+    if (state.isAwaitingMoreInfo) {
+        if (norm === 'no') { addChatMessage("Hasta pronto. 👋", 'bot'); state.isAwaitingMoreInfo = false; setTimeout(() => { clearChat(); document.getElementById('close-assistant')?.click(); }, 1500); return; }
+        else if (norm === 'si') { addChatMessage("¿En qué te puedo servir?", 'bot'); state.isAwaitingMoreInfo = false; return; }
+        state.isAwaitingMoreInfo = false;
+    }
+
     if (state.isAwaitingNewCategoryConfirm) {
         if (norm === 'si' || norm === 'confirmar' || norm === 'ok') {
             const newCat = state.tempNewCategoryName;
@@ -228,6 +244,40 @@ function processCommand(text) {
     if (norm.includes('balance') || norm.includes('saldo') || norm.includes('cuanto tengo')) {
         addChatMessage(`${state.userName || 'Usuario'}, tu balance es ${formatCurrency(state.balance)} (${formatVES(state.balance)}).`, 'bot');
         return;
+    }
+
+    if (norm.includes('cuanto') || norm.includes('total') || norm.includes('informe') || norm.includes('resumen')) {
+        if (norm.includes('gasto') || norm.includes('gastado') || norm.includes('detallado')) {
+            const exps = state.transactions.filter(t => t.type === 'expense');
+            if (exps.length === 0) { addChatMessage("No tienes gastos registrados todavía.", 'bot'); }
+            else {
+                const cats = {}; exps.forEach(e => cats[e.category] = (cats[e.category] || 0) + e.amount);
+                let summary = "<b>Resumen de tus gastos:</b><br>";
+                Object.keys(cats).forEach(c => { summary += `• ${c}: ${formatCurrency(cats[c])} (${formatVES(cats[c])})<br>`; });
+                summary += `<br>Total: ${formatCurrency(state.expenses)} (${formatVES(state.expenses)})`;
+                addChatMessage(summary, 'bot');
+                setTimeout(() => { addChatMessage("¿Deseas otra información?", 'bot', false, [{label:'Sí', val:'si'}, {label:'No', val:'no'}]); state.isAwaitingMoreInfo = true; }, 800);
+                return;
+            }
+        } else if (norm.includes('ingreso') || norm.includes('ganado') || norm.includes('gane')) {
+            const incs = state.transactions.filter(t => t.type === 'income');
+            if (incs.length === 0) { addChatMessage(`No tienes ingresos registrados todavía.`, 'bot'); }
+            else {
+                const subcats = {}; incs.forEach(e => subcats[e.category] = (subcats[e.category] || 0) + e.amount);
+                let summary = "<b>Resumen de tus ingresos:</b><br>";
+                let hasPositive = false;
+                Object.keys(subcats).forEach(c => { if (subcats[c] > 0) { summary += `• ${c}: ${formatCurrency(subcats[c])} (${formatVES(subcats[c])})<br>`; hasPositive = true; } });
+                if (!hasPositive) { addChatMessage(`No tienes ingresos con saldo positivo.`, 'bot'); }
+                else { summary += `<br>Total Ingresos: ${formatCurrency(state.income)} (${formatVES(state.income)})`; addChatMessage(summary, 'bot'); }
+            }
+            return;
+        }
+    }
+
+    if (norm.includes('ver') || norm.includes('ir') || norm.includes('abrir') || norm.includes('mostrar')) {
+        if (norm.includes('reporte') || norm.includes('analitica') || norm.includes('grafico')) { switchScreen('analytics'); addChatMessage("Abriendo reportes...", 'bot'); return; }
+        if (norm.includes('ajuste') || norm.includes('configuracion')) { toggleMenu(); addChatMessage("Abriendo configuración...", 'bot'); return; }
+        if (norm.includes('inicio') || norm.includes('dashboard')) { switchScreen('dashboard'); addChatMessage("Volviendo al inicio.", 'bot'); return; }
     }
 
     if (norm.includes('gasto') || norm.includes('gaste') || norm.includes('pague')) {
