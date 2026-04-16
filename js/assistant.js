@@ -103,6 +103,39 @@ function showPaymentAccounts(group) {
     addChatMessage(`¿Desde qué cuenta de ${labels[group]} salió el dinero?`, 'bot', false, chips);
 }
 
+function showBalanceCategoryOptions() {
+    addChatMessage("¿De qué categoría quieres ver el saldo detallado?", 'bot', false, [
+        { label: 'Bancos', val: 'bancos', icon: 'building-2' },
+        { label: 'Inversiones', val: 'inversiones', icon: 'trending-up' },
+        { label: 'Divisas', val: 'divisas', icon: 'wallet' }
+    ]);
+}
+
+function showBalanceCategoryDetails(group) {
+    const labels = { bancos: 'Bancos', inversiones: 'Inversiones', divisas: 'Divisas' };
+    const subcats = (state.incomeCategories && state.incomeCategories[group]) ? state.incomeCategories[group] : [];
+    
+    let summary = `<b>Saldos en ${labels[group]}:</b><br>`;
+    let total = 0;
+
+    if (subcats.length === 0) {
+        summary += "<i>No hay cuentas registradas en esta categoría.</i>";
+    } else {
+        subcats.forEach(s => {
+            const bal = getBalanceByAccount(s);
+            total += bal;
+            summary += `• ${s}: ${formatCurrency(bal)} (${formatVES(bal)})<br>`;
+        });
+        summary += `<br><b>Total ${labels[group]}: ${formatCurrency(total)} (${formatVES(total)})</b>`;
+    }
+    
+    addChatMessage(summary, 'bot');
+    setTimeout(() => {
+        addChatMessage("¿Deseas ver otra categoría?", 'bot', false, [{label:'Sí', val:'otro_saldo'}, {label:'No', val:'no'}]);
+        state.isAwaitingMoreInfo = true;
+    }, 800);
+}
+
 function requestNewCategory() {
     state.isAwaitingCategory = false;
     state.isAwaitingNewCategory = true;
@@ -131,6 +164,7 @@ function resetAssistantStates() {
     state.isAwaitingIncomeSubDest = false;
     state.isAwaitingPaymentType = false;
     state.isAwaitingPaymentAccount = false;
+    state.isAwaitingBalanceCategory = false;
     state.isAwaitingConfirmation = false;
     state.tempNewCategoryName = null;
     state.tempSourceGroup = null;
@@ -157,7 +191,19 @@ function processCommand(text) {
     if (state.isAwaitingMoreInfo) {
         if (norm === 'no') { addChatMessage("Hasta pronto. 👋", 'bot'); state.isAwaitingMoreInfo = false; setTimeout(() => { clearChat(); document.getElementById('close-assistant')?.click(); }, 1500); return; }
         else if (norm === 'si') { addChatMessage("¿En qué te puedo servir?", 'bot'); state.isAwaitingMoreInfo = false; return; }
+        else if (norm === 'otro_saldo') { state.isAwaitingMoreInfo = false; state.isAwaitingBalanceCategory = true; showBalanceCategoryOptions(); return; }
         state.isAwaitingMoreInfo = false;
+    }
+
+    if (state.isAwaitingBalanceCategory) {
+        const mapping = { 'banco': 'bancos', 'bancos': 'bancos', 'inversion': 'inversiones', 'inversiones': 'inversiones', 'divisa': 'divisas', 'divisas': 'divisas' };
+        const found = mapping[norm];
+        if (found) {
+            state.isAwaitingBalanceCategory = false;
+            showBalanceCategoryDetails(found);
+        } else if (norm === 'cancelar') { resetAssistantStates(); addChatMessage("Operación cancelada.", 'bot'); }
+        else { addChatMessage("Por favor selecciona: Bancos, Inversiones o Divisas.", 'bot'); }
+        return;
     }
 
     if (state.isAwaitingNewCategoryConfirm) {
@@ -292,6 +338,12 @@ function processCommand(text) {
 
     const isVES = /\bbs\.?\b/.test(norm) || norm.includes('bolivar') || norm.includes('bs');
     let currentCurrency = isVES ? 'VES' : 'USD';
+
+    if (norm.includes('solicito saldo') || norm.includes('ver saldos') || (norm.includes('detalle') && norm.includes('saldo'))) {
+        state.isAwaitingBalanceCategory = true;
+        showBalanceCategoryOptions();
+        return;
+    }
 
     if (norm.includes('balance') || norm.includes('saldo') || norm.includes('cuanto tengo')) {
         addChatMessage(`${state.userName || 'Usuario'}, tu balance es ${formatCurrency(state.balance)} (${formatVES(state.balance)}).`, 'bot');

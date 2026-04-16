@@ -20,6 +20,7 @@ let state = {
     isAwaitingIncomeSubDest: false,
     isAwaitingPaymentType: false,        // Flujo: elegir fuente de pago (Bancos...)
     isAwaitingPaymentAccount: false,     // Flujo: elegir cuenta específica
+    isAwaitingBalanceCategory: false,    // Flujo: elegir categoría para ver saldos
     isAwaitingConfirmation: false,
     tempIncomeGroup: null,               // Para ingresos
     tempSourceGroup: null,               // Para gastos (fuente: bancos...)
