@@ -337,6 +337,15 @@
                             <i data-lucide="alert-triangle" style="width:14px;"></i> Cierre de Mes
                         </h5>
                         <p style="font-size: 0.7rem; color: var(--text-secondary); margin-bottom: 12px;">Consolida tus movimientos: borra el historial del mes pero mantiene tus saldos actuales en Bancos e Inversiones.</p>
+                        
+                        <div style="margin-bottom: 10px;">
+                            <label style="font-size: 0.65rem; color: var(--text-dim); text-transform: uppercase; font-weight: 700; margin-bottom: 5px; display: block;">Formato del Reporte</label>
+                            <select id="closure-report-format" style="width: 100%; background: var(--surface); border: 1px solid var(--glass-border); border-radius: 8px; padding: 8px; color: var(--text-primary); font-size: 0.8rem;">
+                                <option value="excel">Excel (.csv)</option>
+                                <option value="pdf">PDF (Vista previa p/ Imprimir)</option>
+                            </select>
+                        </div>
+
                         <button id="consolidate-btn" class="chat-option-btn" style="background: rgba(239, 68, 68, 0.1); color: #ef4444; border-color: rgba(239, 68, 68, 0.2); width: 100%;">
                             Ejecutar Cierre de Mes
                         </button>

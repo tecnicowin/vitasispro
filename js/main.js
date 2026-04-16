@@ -196,10 +196,15 @@ function initSettingsEventListeners() {
     });
 
     document.getElementById('consolidate-btn')?.addEventListener('click', () => {
-        if (confirm("¿Estás seguro de realizar el Cierre de Mes? Se borrará el detalle de movimientos pero se conservarán los saldos actuales de tus cuentas.")) {
+        const format = document.getElementById('closure-report-format').value;
+        if (confirm(`¿Estás seguro de realizar el Cierre de Mes? Se generará un reporte en ${format === 'excel' ? 'Excel' : 'PDF'}, se borrará el historial pero se conservarán tus saldos activos.`)) {
+            // Generar Reporte antes de limpiar
+            generateFinancialReport(format);
+
+            // Consolidar
             consolidateHistory();
             updateUI();
-            showToast("Mes cerrado y saldos consolidados ✅");
+            showToast("Mes cerrado y reporte generado ✅");
             toggleMenu();
         }
     });
