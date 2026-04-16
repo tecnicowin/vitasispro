@@ -159,10 +159,12 @@ function requestNewCategory() {
     addChatMessage('🏷️ ¿Cómo quieres llamar a la nueva categoría? Escríbela a continuación.', 'bot');
 }
 
+
 function completeTransaction(a, t, c, currency = "USD", subType = null) {
     addTransaction(a, t, c, currency, subType);
     updateUI();
     updateCharts();
+}
 function processCommand(text) {
     const lower = text.toLowerCase();
     const norm = normalize(text);
@@ -179,7 +181,28 @@ function processCommand(text) {
                 state.isAwaitingNewCategoryConfirm = false;
                 state.tempCategory = newCat;
                 state.isAwaitingConfirmation = true;
-                addChatMessage(`¿Confirmas el ingreso de ${state.tempCurrency === 'USD' ? formatCurrency(state.tempAmount) : state.tempAmount+' Bs.'} en <b>${newCat}</b>?`, 'bot');
+                saveData();
+                
+                const text = `¿Confirmas el ingreso de ${state.tempCurrency === 'USD' ? formatCurrency(state.tempAmount) : state.tempAmount+' Bs.'} en <b>${newCat}</b>?`;
+                const container = document.getElementById('chat-container');
+                const msg = document.createElement('div');
+                msg.className = `chat-message bot`;
+                
+                let content = `<div class="message-bubble">${text}</div>`;
+                content += `<div class="category-chip-list">
+                    <button class="cat-chip" onclick="document.getElementById('assistant-input').value='si'; document.getElementById('send-btn').click();">
+                        <i data-lucide="check"></i><span>Sí, confirmar</span>
+                    </button>
+                    <button class="cat-chip" onclick="document.getElementById('assistant-input').value='no'; document.getElementById('send-btn').click();">
+                        <i data-lucide="x"></i><span>Cancelar</span>
+                    </button>
+                </div>`;
+
+                msg.innerHTML = content;
+                container.appendChild(msg);
+                container.scrollTop = container.scrollHeight;
+                if (window.lucide) window.lucide.createIcons();
+                speak(text.replace(/<[^>]+>/g, ''));
                 return;
             } else {
                 if (!state.customCategories) state.customCategories = [];
@@ -242,9 +265,28 @@ function processCommand(text) {
             state.tempCategory = found;
             state.isAwaitingIncomeSubDest = false;
             state.isAwaitingConfirmation = true;
-            addChatMessage(`¿Confirmas el ingreso de ${state.tempCurrency === 'USD' ? formatCurrency(state.tempAmount) : state.tempAmount+' Bs.'} en <b>${found}</b>?`, 'bot');
+            
+            const text = `¿Confirmas el ingreso de ${state.tempCurrency === 'USD' ? formatCurrency(state.tempAmount) : state.tempAmount+' Bs.'} en <b>${found}</b>?`;
+            const container = document.getElementById('chat-container');
+            const msg = document.createElement('div');
+            msg.className = `chat-message bot`;
+            
+            let content = `<div class="message-bubble">${text}</div>`;
+            content += `<div class="category-chip-list">
+                <button class="cat-chip" onclick="document.getElementById('assistant-input').value='si'; document.getElementById('send-btn').click();">
+                    <i data-lucide="check"></i><span>Sí, confirmar</span>
+                </button>
+                <button class="cat-chip" onclick="document.getElementById('assistant-input').value='no'; document.getElementById('send-btn').click();">
+                    <i data-lucide="x"></i><span>Cancelar</span>
+                </button>
+            </div>`;
+
+            msg.innerHTML = content;
+            container.appendChild(msg);
+            container.scrollTop = container.scrollHeight;
+            if (window.lucide) window.lucide.createIcons();
+            speak(text.replace(/<[^>]+>/g, ''));
         } else {
-            // No encontrado, preguntar de nuevo o sugerir "nueva"
             addChatMessage(`No encontré esa subcategoría. Prueba seleccionándola o escribe <b>Nueva</b>.`, 'bot');
         }
         return;

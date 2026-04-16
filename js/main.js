@@ -311,6 +311,35 @@ function initSettingsListeners() {
     });
 }
 
+function boot() {
+    loadData();
+    if (window.lucide) window.lucide.createIcons();
+    applyTheme(state.theme);
+    initCharts();
+
+    setTimeout(() => {
+        const splash = document.getElementById('splash');
+        if (splash) splash.classList.remove('active');
+
+        if (state.securityMode !== 'none') {
+            switchScreen('login-screen');
+            initLoginFlow();
+        } else {
+            switchScreen('dashboard');
+            try { updateUI(); } catch(e) { console.error(e); }
+        }
+    }, 1500);
+
+    initSettingsListeners();
+}
+
+// ── Iniciar Aplicación ───────────────────────────────
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', boot);
+} else {
+    boot();
+}
+
 // ── Biometric & Auth Logic ────────────────────────────
 function initLoginFlow() {
     const bioBtn = document.getElementById('biometric-login-btn');
