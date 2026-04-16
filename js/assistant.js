@@ -261,8 +261,8 @@ function processCommand(text) {
                 .reduce((sum, t) => sum + t.amount, 0);
 
             addChatMessage(`✅ Registro confirmado: ${state.tempType === 'income' ? 'Ingreso' : 'Gasto'} de ${state.tempCurrency === 'USD' ? formatCurrency(state.tempAmount) : state.tempAmount + ' Bs.'} en <b>${state.tempCategory}</b>.
-            <br><small>Saldo en ${state.tempCategory}: ${formatCurrency(catBalance)}</small>
-            <br><small>Total Ingresos: ${formatCurrency(state.income)}</small>`, 'bot');
+            <br><small>Saldo en ${state.tempCategory}: ${formatCurrency(catBalance)} (${formatVES(catBalance)})</small>
+            <br><small>Total Ingresos: ${formatCurrency(state.income)} (${formatVES(state.income)})</small>`, 'bot');
             
             state.tempAmount = 0;
             state.tempCategory = null;
