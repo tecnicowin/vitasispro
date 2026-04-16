@@ -1,8 +1,7 @@
-const CACHE_NAME = 'finance-assistant-v1';
+const CACHE_NAME = 'finance-assistant-v2';
 const ASSETS = [
     'index.html',
     'style.css',
-    'app.js',
     'js/main.js',
     'js/ui.js',
     'js/state.js',
