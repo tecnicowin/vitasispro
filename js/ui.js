@@ -100,10 +100,14 @@ function updateDistributionBalances() {
     const dBalance = getBalanceByCategoryType('divisas'); // Aunque no esté en el dashboard principal, se puede usar
     
     const distBancos = document.getElementById('dist-bancos');
+    const distBancosBs = document.getElementById('dist-bancos-bs');
     const distInversiones = document.getElementById('dist-inversiones');
+    const distInversionesBs = document.getElementById('dist-inversiones-bs');
     
     if (distBancos) distBancos.textContent = formatCurrency(bBalance);
+    if (distBancosBs) distBancosBs.textContent = formatVES(bBalance);
     if (distInversiones) distInversiones.textContent = formatCurrency(iBalance);
+    if (distInversionesBs) distInversionesBs.textContent = formatVES(iBalance);
 }
 
 function renderIncomeCategories() {

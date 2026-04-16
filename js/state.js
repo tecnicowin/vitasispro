@@ -41,6 +41,11 @@ function loadData() {
     const saved = localStorage.getItem(STORAGE_KEY);
     if (saved) {
         state = { ...state, ...JSON.parse(saved) };
+        // Ensure incomeCategories exists and has all keys
+        if (!state.incomeCategories) state.incomeCategories = { bancos: [], inversiones: [], divisas: [] };
+        if (!state.incomeCategories.bancos) state.incomeCategories.bancos = [];
+        if (!state.incomeCategories.inversiones) state.incomeCategories.inversiones = [];
+        if (!state.incomeCategories.divisas) state.incomeCategories.divisas = [];
     }
     return state;
 }

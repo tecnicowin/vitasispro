@@ -423,8 +423,14 @@ header {
 .dist-dot.green { background: #10b981; box-shadow: 0 0 10px rgba(16, 185, 129, 0.4); }
 .dist-dot.yellow { background: #facc15; box-shadow: 0 0 10px rgba(250, 204, 21, 0.4); }
 
-.dist-label { flex: 1; }
-.dist-value { font-weight: 700; color: #ffffff; opacity: 1; }
+.dist-label { flex: 1; margin-right: 15px; }
+.dist-values-group {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+}
+.dist-value { font-weight: 700; color: #ffffff; opacity: 1; font-size: 0.85rem; }
+.dist-value-secondary { font-size: 0.68rem; color: rgba(255,255,255,0.4); margin-top: -2px; }
 
 .income-cats-flow select {
     width: 100%;

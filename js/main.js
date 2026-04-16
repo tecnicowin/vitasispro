@@ -1,6 +1,11 @@
 // js/main.js
 
 if ('serviceWorker' in navigator) {
+    // Recargar cuando el nuevo SW tome el control
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+        window.location.reload();
+    });
+
     window.addEventListener('load', () => {
         navigator.serviceWorker.register('./sw.js').then(reg => {
             reg.addEventListener('updatefound', () => {
