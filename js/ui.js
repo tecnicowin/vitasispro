@@ -67,13 +67,24 @@ function updateUI() {
     if (tExpVal) tExpVal.textContent = formatCurrency(state.expenses);
     if (tExpBs) tExpBs.textContent = formatVES(state.expenses);
 
+    const editName = document.getElementById('edit-name');
     const editEmail = document.getElementById('edit-email');
     const editPhone = document.getElementById('edit-phone');
     const bcvDisp = document.getElementById('bcv-display-val');
 
+    if (editName && !editName.matches(':focus')) editName.value = state.userName || '';
     if (editEmail && !editEmail.matches(':focus')) editEmail.value = state.email || '';
     if (editPhone && !editPhone.matches(':focus')) editPhone.value = state.phone || '';
     if (bcvDisp) bcvDisp.textContent = state.bcvRate || '--';
+
+    const themeToggle = document.getElementById('theme-toggle');
+    if (themeToggle) themeToggle.checked = state.theme === 'light';
+    
+    if (state.securityMode) {
+        const rad = document.getElementById(state.securityMode === 'biometric' ? 'sec-biometric' : `sec-${state.securityMode}`);
+        if (rad) rad.checked = true;
+        document.getElementById('pin-setup')?.classList.toggle('hidden', state.securityMode !== 'pin');
+    }
 
     renderTransactions();
     renderCategories();

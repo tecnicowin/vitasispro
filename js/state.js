@@ -14,10 +14,11 @@ let state = {
     isAwaitingCategory: false,
     isAwaitingMoreInfo: false,
     isAwaitingRate: false,
-    isAwaitingNewCategory: false,       // Flujo: crear nueva categoría
-    isAwaitingNewCategoryConfirm: false, // Flujo: confirmar nombre
-    isAwaitingIncomeDestType: false,     // Flujo: elegir Banco/Inversión/Divisa
-    isAwaitingIncomeSubDest: false,      // Flujo: elegir subcategoría específica
+    isAwaitingNewCategory: false,
+    isAwaitingNewCategoryConfirm: false,
+    isAwaitingIncomeDestType: false,
+    isAwaitingIncomeSubDest: false,
+    isAwaitingConfirmation: false,       // Missing flag restored
     tempIncomeGroup: null,               // 'bancos', 'inversiones', 'divisas'
     tempNewCategoryName: null,           // Nombre temporal de la nueva cat.
     tempAmount: 0,
