@@ -108,10 +108,54 @@ function recalcTotals() {
     state.income = 0;
     state.expenses = 0;
     state.balance = 0;
+    
+    // Para las estadísticas del dashboard (Mes Actual)
+    state.monthlyIncome = 0;
+    state.monthlyExpenses = 0;
+    
+    const now = new Date();
+    const currentMonth = now.getMonth();
+    const currentYear = now.getFullYear();
+
     state.transactions.forEach(t => {
-        if (t.type === 'income') { state.income += t.amount; state.balance += t.amount; }
-        else { state.expenses += t.amount; state.balance -= t.amount; }
+        const tDate = new Date(t.timestamp);
+        const isCurrentMonth = tDate.getMonth() === currentMonth && tDate.getFullYear() === currentYear;
+
+        if (t.type === 'income') {
+            state.income += t.amount;
+            state.balance += t.amount;
+            if (isCurrentMonth) state.monthlyIncome += t.amount;
+        } else {
+            state.expenses += t.amount;
+            state.balance -= t.amount;
+            if (isCurrentMonth) state.monthlyExpenses += t.amount;
+        }
     });
+}
+
+function consolidateHistory() {
+    // 1. Calcular balances finales por cuenta antes de limpiar
+    const accountBalances = {};
+    const groups = ['bancos', 'inversiones', 'divisas'];
+    groups.forEach(g => {
+        (state.incomeCategories[g] || []).forEach(acc => {
+            accountBalances[acc] = { bal: getBalanceByAccount(acc), group: g };
+        });
+    });
+
+    // 2. Limpiar transacciones
+    state.transactions = [];
+
+    // 3. Re-crear saldos iniciales
+    Object.keys(accountBalances).forEach(name => {
+        const data = accountBalances[name];
+        if (data.bal !== 0) {
+            addTransaction(data.bal, 'income', name, 'USD', data.group, null);
+        }
+    });
+
+    recalcTotals();
+    saveData();
 }
 
 function deleteTransaction(id) {

@@ -62,10 +62,10 @@ function updateUI() {
     const tExpVal = document.getElementById('total-expense');
     const tExpBs = document.getElementById('total-expense-bs');
 
-    if (tIncVal) tIncVal.textContent = formatCurrency(state.income);
-    if (tIncBs) tIncBs.textContent = formatVES(state.income);
-    if (tExpVal) tExpVal.textContent = formatCurrency(state.expenses);
-    if (tExpBs) tExpBs.textContent = formatVES(state.expenses);
+    if (tIncVal) tIncVal.textContent = formatCurrency(state.monthlyIncome || 0);
+    if (tIncBs) tIncBs.textContent = formatVES(state.monthlyIncome || 0);
+    if (tExpVal) tExpVal.textContent = formatCurrency(state.monthlyExpenses || 0);
+    if (tExpBs) tExpBs.textContent = formatVES(state.monthlyExpenses || 0);
 
     const editName = document.getElementById('edit-name');
     const editEmail = document.getElementById('edit-email');

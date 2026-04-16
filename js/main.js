@@ -194,6 +194,15 @@ function initSettingsEventListeners() {
         subcatInput.value = '';
         saveData(); renderIncomeCategories(); showToast("Cuenta agregada");
     });
+
+    document.getElementById('consolidate-btn')?.addEventListener('click', () => {
+        if (confirm("¿Estás seguro de realizar el Cierre de Mes? Se borrará el detalle de movimientos pero se conservarán los saldos actuales de tus cuentas.")) {
+            consolidateHistory();
+            updateUI();
+            showToast("Mes cerrado y saldos consolidados ✅");
+            toggleMenu();
+        }
+    });
 }
 
 function boot() {
