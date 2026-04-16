@@ -83,11 +83,24 @@ function showIncomeDestTypes() {
 function showIncomeSubDest(group) {
     const labels = { bancos: 'los Bancos', inversiones: 'las Inversiones', divisas: 'las Divisas' };
     const subcats = (state.incomeCategories && state.incomeCategories[group]) ? state.incomeCategories[group] : [];
-    
     const chips = subcats.map(s => ({ label: s, val: s, icon: 'tag' }));
     chips.push({ label: 'Nueva', val: 'nueva', icon: 'plus' });
-
     addChatMessage(`Selecciona una subcategoría para ${labels[group]}:`, 'bot', false, chips);
+}
+
+function showPaymentTypes() {
+    addChatMessage("¿Con qué pagaste este gasto? Selecciona el origen:", 'bot', false, [
+        { label: 'Banco', val: 'bancos', icon: 'building-2' },
+        { label: 'Inversión', val: 'inversiones', icon: 'trending-up' },
+        { label: 'Divisas', val: 'divisas', icon: 'wallet' }
+    ]);
+}
+
+function showPaymentAccounts(group) {
+    const labels = { bancos: 'los Bancos', inversiones: 'las Inversiones', divisas: 'las Divisas' };
+    const subcats = (state.incomeCategories && state.incomeCategories[group]) ? state.incomeCategories[group] : [];
+    const chips = subcats.map(s => ({ label: s, val: s, icon: 'tag' }));
+    addChatMessage(`¿Desde qué cuenta de ${labels[group]} salió el dinero?`, 'bot', false, chips);
 }
 
 function requestNewCategory() {
@@ -97,8 +110,8 @@ function requestNewCategory() {
     addChatMessage('🏷️ ¿Cómo quieres llamar a la nueva categoría? Escríbela a continuación.', 'bot');
 }
 
-function completeTransaction(a, t, c, currency = "USD", subType = null) {
-    addTransaction(a, t, c, currency, subType);
+function completeTransaction(a, t, c, currency = "USD", subType = null, source = null) {
+    addTransaction(a, t, c, currency, subType, source);
     updateUI();
     updateCharts();
 }
@@ -116,8 +129,13 @@ function resetAssistantStates() {
     state.isAwaitingNewCategoryConfirm = false;
     state.isAwaitingIncomeDestType = false;
     state.isAwaitingIncomeSubDest = false;
+    state.isAwaitingPaymentType = false;
+    state.isAwaitingPaymentAccount = false;
     state.isAwaitingConfirmation = false;
     state.tempNewCategoryName = null;
+    state.tempSourceGroup = null;
+    state.tempSourceAccount = null;
+    state.tempIncomeGroup = null;
     state.tempAmount = 0;
 }
 
@@ -204,16 +222,50 @@ function processCommand(text) {
         return;
     }
 
+    if (state.isAwaitingPaymentType) {
+        const mapping = { 'banco': 'bancos', 'bancos': 'bancos', 'inversion': 'inversiones', 'inversiones': 'inversiones', 'divisa': 'divisas', 'divisas': 'divisas' };
+        const found = mapping[norm];
+        if (found) {
+            state.tempSourceGroup = found;
+            state.isAwaitingPaymentType = false;
+            state.isAwaitingPaymentAccount = true;
+            showPaymentAccounts(found);
+        } else if (norm === 'cancelar') { resetAssistantStates(); addChatMessage("Operación cancelada.", 'bot'); }
+        else { addChatMessage("Por favor selecciona: Banco, Inversión o Divisas.", 'bot'); }
+        return;
+    }
+
+    if (state.isAwaitingPaymentAccount) {
+        const subcats = state.incomeCategories[state.tempSourceGroup] || [];
+        const found = subcats.find(s => normalize(s) === norm);
+        if (found) {
+            state.tempSourceAccount = found;
+            state.isAwaitingPaymentAccount = false;
+            state.isAwaitingConfirmation = true;
+            addChatMessage(`¿Confirmas el gasto de ${state.tempCurrency === 'USD' ? formatCurrency(state.tempAmount) : state.tempAmount+' Bs.'} en <b>${state.tempCategory}</b> pagado con <b>${found}</b>?`, 'bot', false, [
+                { label: 'Sí, confirmar', val: 'si', icon: 'check' },
+                { label: 'Cancelar', val: 'no', icon: 'x' }
+            ]);
+        } else { addChatMessage("Por favor selecciona una de tus cuentas registradas.", 'bot'); }
+        return;
+    }
+
     if (state.isAwaitingConfirmation) {
         if (norm === 'si' || norm === 'confirmar' || norm === 'ok') {
             const type = state.tempType;
             const cat = state.tempCategory;
             const amt = state.tempAmount;
             const cur = state.tempCurrency;
-            const group = state.tempIncomeGroup;
+            const group = state.tempType === 'income' ? state.tempIncomeGroup : state.tempSourceGroup;
+            const source = state.tempSourceAccount;
+            
             resetAssistantStates();
-            completeTransaction(amt, type, cat, cur, group);
-            addChatMessage(`✅ Registro confirmado en <b>${cat}</b>. Saldo actualizado.`, 'bot');
+            completeTransaction(amt, type, cat, cur, group, source);
+            
+            const accountBal = source ? getBalanceByAccount(source) : (type === 'income' ? getBalanceByAccount(cat) : null);
+            let feedback = `✅ Registro confirmado en <b>${cat}</b>.`;
+            if (accountBal !== null) feedback += `<br>Saldo actual en ${source || cat}: ${formatCurrency(accountBal)} (${formatVES(accountBal)})`;
+            addChatMessage(feedback, 'bot');
         } else if (norm === 'no' || norm === 'cancelar') {
             resetAssistantStates();
             addChatMessage("Acción cancelada.", 'bot');
@@ -284,8 +336,16 @@ function processCommand(text) {
         const amount = extractAmount(lower);
         if (amount) {
             state.tempAmount = amount; state.tempCurrency = currentCurrency; state.tempType = 'expense';
-            state.isAwaitingCategory = true;
-            addChatMessage("¿En qué categoría lo registro?", 'bot', true);
+            const categories = ["Comida", "Transporte", "Ocio", "Salud", "Hogar", "Celular", "Personal", "Tarjeta Credito", "Cashea", "Servicios", "Educacion", "Varios", ...(state.customCategories || [])];
+            let found = categories.find(c => norm.includes(normalize(c)));
+            if (found) { 
+                state.tempCategory = found; 
+                state.isAwaitingPaymentType = true;
+                showPaymentTypes();
+            } else {
+                state.isAwaitingCategory = true;
+                addChatMessage("¿En qué categoría lo registro?", 'bot', true);
+            }
             return;
         }
     }
@@ -303,7 +363,12 @@ function processCommand(text) {
     if (state.isAwaitingCategory) {
         const categories = ["Comida", "Transporte", "Ocio", "Salud", "Hogar", "Celular", "Personal", "Tarjeta Credito", "Cashea", "Servicios", "Educacion", "Varios", ...(state.customCategories || [])];
         let found = categories.find(c => norm.includes(normalize(c)));
-        if (found) { state.tempCategory = found; state.isAwaitingCategory = false; state.isAwaitingConfirmation = true; addChatMessage(`¿Confirmas el gasto en <b>${found}</b>?`, 'bot', false, [{label:'Sí', val:'si'}, {label:'No', val:'no'}]); }
+        if (found) { 
+            state.tempCategory = found; 
+            state.isAwaitingCategory = false; 
+            state.isAwaitingPaymentType = true;
+            showPaymentTypes();
+        }
         else { addChatMessage("Por favor selecciona una categoría.", 'bot', true); }
         return;
     }

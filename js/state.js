@@ -18,9 +18,13 @@ let state = {
     isAwaitingNewCategoryConfirm: false,
     isAwaitingIncomeDestType: false,
     isAwaitingIncomeSubDest: false,
-    isAwaitingConfirmation: false,       // Missing flag restored
-    tempIncomeGroup: null,               // 'bancos', 'inversiones', 'divisas'
-    tempNewCategoryName: null,           // Nombre temporal de la nueva cat.
+    isAwaitingPaymentType: false,        // Flujo: elegir fuente de pago (Bancos...)
+    isAwaitingPaymentAccount: false,     // Flujo: elegir cuenta específica
+    isAwaitingConfirmation: false,
+    tempIncomeGroup: null,               // Para ingresos
+    tempSourceGroup: null,               // Para gastos (fuente: bancos...)
+    tempSourceAccount: null,             // Para gastos (específica: Banesco)
+    tempNewCategoryName: null,
     tempAmount: 0,
     tempType: null,
     tempCurrency: 'USD',
@@ -54,7 +58,7 @@ function saveData() {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
 }
 
-function addTransaction(amount, type, category, currency = 'USD', subCategoryType = null) {
+function addTransaction(amount, type, category, currency = 'USD', subCategoryType = null, sourceAccount = null) {
     let usdAmount = amount;
     if (currency === 'VES' && state.bcvRate) {
         usdAmount = amount / state.bcvRate;
@@ -67,7 +71,8 @@ function addTransaction(amount, type, category, currency = 'USD', subCategoryTyp
         currency: currency,
         type: type,
         category: category,
-        subCategoryType: subCategoryType, // Bancos, Inversiones, Divisas (para ingresos)
+        subCategoryType: subCategoryType, // Se usa para 'bancos', 'inversiones', 'divisas'
+        sourceAccount: sourceAccount,     // El nombre de la cuenta (ej: Banesco)
         date: new Date().toLocaleDateString('es-ES', { day: '2-digit', month: 'short' }),
         timestamp: Date.now()
     };
@@ -80,8 +85,22 @@ function addTransaction(amount, type, category, currency = 'USD', subCategoryTyp
 
 function getBalanceByCategoryType(type) {
     return state.transactions
-        .filter(t => t.type === 'income' && t.subCategoryType === type)
-        .reduce((sum, t) => sum + t.amount, 0);
+        .filter(t => t.subCategoryType === type)
+        .reduce((sum, t) => {
+            if (t.type === 'income') return sum + t.amount;
+            if (t.type === 'expense') return sum - t.amount;
+            return sum;
+        }, 0);
+}
+
+function getBalanceByAccount(name) {
+    return state.transactions.reduce((sum, t) => {
+        // En ingresos, category es el nombre de la cuenta
+        if (t.type === 'income' && t.category === name) return sum + t.amount;
+        // En gastos, sourceAccount es el nombre de la cuenta
+        if (t.type === 'expense' && t.sourceAccount === name) return sum - t.amount;
+        return sum;
+    }, 0);
 }
 
 function recalcTotals() {
