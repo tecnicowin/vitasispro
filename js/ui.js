@@ -1,9 +1,9 @@
 // js/ui.js
 let activeFilter = 'mes'; // 'hoy' | 'semana' | 'mes'
 
-function showToast(text) {
+function showToast(text, type = 'success') {
     const toast = document.createElement('div');
-    toast.className = 'toast-notification';
+    toast.className = `toast-notification ${type}`;
     toast.textContent = text;
     document.body.appendChild(toast);
     setTimeout(() => toast.classList.add('show'), 100);
@@ -238,6 +238,12 @@ function createTransactionHTML(t) {
         sign = '-';
         typeClass = 'expense-item';
         amountClass = 'amount-expense';
+    } else if (t.type === 'balance_init') {
+        color = 'rgba(124, 111, 247, 0.1); color: #7c6ff7;';
+        icon = 'lock';
+        sign = '';
+        typeClass = 'income-item';
+        amountClass = 'amount-income';
     } else {
         color = t.type === 'income' ? 'rgba(16, 185, 129, 0.1); color: #10b981;' : 'rgba(59, 130, 246, 0.1); color: #3b82f6;';
         icon = t.type === 'income' ? 'trending-up' : 'refresh-cw';

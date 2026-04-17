@@ -1,4 +1,4 @@
-const CACHE_NAME = 'finance-assistant-v3';
+const CACHE_NAME = 'finance-assistant-v4';
 const ASSETS = [
     'index.html',
     'style.css',
@@ -33,9 +33,22 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
-    event.respondWith(
-        caches.match(event.request).then((response) => response || fetch(event.request))
-    );
+    // Para archivos con versión (?v=...), intentamos red primero, fallback a cache
+    if (event.request.url.includes('?v=')) {
+        event.respondWith(
+            fetch(event.request)
+                .then(response => {
+                    const resClone = response.clone();
+                    caches.open(CACHE_NAME).then(cache => cache.put(event.request, resClone));
+                    return response;
+                })
+                .catch(() => caches.match(event.request))
+        );
+    } else {
+        event.respondWith(
+            caches.match(event.request).then((response) => response || fetch(event.request))
+        );
+    }
 });
 
 self.addEventListener('message', (event) => {

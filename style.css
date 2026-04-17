@@ -262,7 +262,7 @@ header {
 #dashboard main::-webkit-scrollbar { display: none; }
 
 /* =====================
-   9. BALANCE CARD — PREMIUM
+   9. BALANCE CARD â€” PREMIUM
    ===================== */
 .balance-card {
     border-radius: var(--radius-xl);
@@ -276,7 +276,7 @@ header {
     transition: background 0.5s ease, box-shadow 0.4s ease;
 }
 
-/* Patrón geométrico sutil */
+/* PatrÃ³n geomÃ©trico sutil */
 .balance-card::before {
     content: '';
     position: absolute;
@@ -602,7 +602,7 @@ header {
 .empty-state p { font-size: 0.9rem; }
 
 /* =====================
-   12. BOTTOM NAVIGATION — CON FAB
+   12. BOTTOM NAVIGATION â€” CON FAB
    ===================== */
 .bottom-nav {
     position: absolute;
@@ -827,7 +827,7 @@ canvas {
 
 .cat-chip:hover i, .cat-chip:active i { color: white; }
 
-/* Botón "Nueva categoría" — estilo diferenciado */
+/* BotÃ³n "Nueva categorÃ­a" â€” estilo diferenciado */
 .cat-chip-new {
     border-style: dashed;
     border-color: var(--secondary);
@@ -1019,6 +1019,28 @@ canvas {
 .setting-item input::placeholder { color: var(--text-dim); }
 
 .setting-item.hidden { display: none; }
+
+#pin-setup {
+    background: rgba(124, 111, 247, 0.05);
+    border: 1px dashed var(--primary);
+    margin: 5px 0 15px 15px;
+    border-radius: 12px;
+    padding: 12px;
+    animation: slideIn 0.3s ease-out;
+}
+
+#pin-setup input {
+    background: var(--bg-card);
+    text-align: center;
+    letter-spacing: 12px;
+    font-size: 1.2rem;
+    font-weight: 700;
+}
+
+@keyframes slideIn {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
 
 /* Toggle switch */
 .toggle {
@@ -1717,7 +1739,7 @@ canvas {
 }
 
 /* =====================
-   20. RESPONSIVE — TABLET/DESKTOP
+   20. RESPONSIVE â€” TABLET/DESKTOP
    ===================== */
 @media (min-width: 768px) {
     #app {
@@ -1736,4 +1758,33 @@ canvas {
 
 @media (min-width: 1200px) {
     body { background: radial-gradient(ellipse at 50% 0%, #0f1a35 0%, #040810 100%); }
+}
+
+/* Toast Notifications */
+.toast-notification {
+    position: fixed;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%) translateY(100px);
+    background: rgba(16, 185, 129, 0.9);
+    backdrop-filter: blur(10px);
+    color: white;
+    padding: 12px 24px;
+    border-radius: 50px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    z-index: 9999;
+    transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    white-space: nowrap;
+}
+
+.toast-notification.show {
+    transform: translateX(-50%) translateY(0);
+}
+
+.toast-notification.error {
+    background: rgba(239, 68, 68, 0.95);
+    background-image: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+    box-shadow: 0 4px 15px rgba(239, 68, 68, 0.4);
 }

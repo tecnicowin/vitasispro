@@ -149,17 +149,42 @@ function initSettingsEventListeners() {
     const themeToggle = document.getElementById('theme-toggle');
     const secRadios = document.querySelectorAll('input[name="security-mode"]');
     
-    document.getElementById('save-settings-btn')?.addEventListener('click', () => {
+    document.getElementById('save-settings-btn')?.addEventListener('click', async () => {
         state.userName = document.getElementById('edit-name')?.value || state.userName;
         state.email = document.getElementById('edit-email')?.value || state.email;
         state.phone = document.getElementById('edit-phone')?.value || state.phone;
-        state.securityMode = Array.from(secRadios).find(r => r.checked)?.value;
+        
+        const selectedMode = Array.from(secRadios).find(r => r.checked)?.value;
+        const newPinVal = document.getElementById('new-pin')?.value;
+
+        if (selectedMode === 'pin') {
+            if (!newPinVal || newPinVal.length < 4) {
+                return showToast("El PIN debe tener 4 dígitos", "error");
+            }
+            state.pin = newPinVal;
+        }
+
+        if (selectedMode === 'biometric' && !state.biometricCredId) {
+            const success = await registerBiometric();
+            if (!success) {
+                document.getElementById('sec-none').checked = true;
+                return; // Error toast shown inside registerBiometric
+            }
+        }
+
+        state.securityMode = selectedMode;
         state.theme = themeToggle?.checked ? 'light' : 'dark';
         applyTheme(state.theme);
         saveData();
         updateUI();
         showToast("Ajustes guardados");
         toggleMenu();
+    });
+
+    secRadios.forEach(radio => {
+        radio.addEventListener('change', () => {
+            document.getElementById('pin-setup').classList.toggle('hidden', radio.value !== 'pin');
+        });
     });
 
     document.getElementById('exit-app-btn')?.addEventListener('click', () => {
@@ -224,12 +249,14 @@ function boot() {
     initCharts();
     
     // UI Inicial
-    if (state.securityMode !== 'none') {
+    if (state.securityMode !== 'none' && (state.pin || state.biometricCredId)) {
         switchScreen('login-screen');
         initLoginFlow();
     } else {
+        state.securityMode = 'none'; // Auto-reset if bad config
         switchScreen('dashboard');
         updateUI();
+        checkExchangeRate(); // Verificar tasa al entrar
     }
 
     setTimeout(() => {
@@ -254,12 +281,80 @@ function initLoginFlow() {
     initPinScreen();
 }
 
+async function registerBiometric() {
+    try {
+        if (!window.PublicKeyCredential) {
+            showToast("Biometría no soportada en este navegador", "error");
+            return false;
+        }
+
+        const challenge = new Uint8Array(32);
+        window.crypto.getRandomValues(challenge);
+        const userID = new Uint8Array(16);
+        window.crypto.getRandomValues(userID);
+
+        const publicKey = {
+            challenge,
+            rp: { name: "Finance Assistant" },
+            user: {
+                id: userID,
+                name: state.email || "user@finance.app",
+                displayName: state.userName || "Usuario"
+            },
+            pubKeyCredParams: [{ alg: -7, type: "public-key" }, { alg: -257, type: "public-key" }],
+            authenticatorSelection: { userVerification: "required" },
+            timeout: 60000
+        };
+
+        const credential = await navigator.credentials.create({ publicKey });
+        state.biometricCredId = btoa(String.fromCharCode(...new Uint8Array(credential.rawId)));
+        showToast("Biometría configurada correctamente");
+        return true;
+    } catch (err) {
+        console.error("Biometric registration failed:", err);
+        showToast("Error al configurar biometría", "error");
+        return false;
+    }
+}
+
 async function initBiometric() {
     try {
+        if (!state.biometricCredId) return;
         const credId = Uint8Array.from(atob(state.biometricCredId), c => c.charCodeAt(0));
-        await navigator.credentials.get({ publicKey: { challenge: new Uint8Array(32), allowCredentials: [{ id: credId, type: 'public-key' }], userVerification: 'required' } });
-        switchScreen('dashboard'); updateUI(); showToast('Acceso concedido');
-    } catch (e) { console.warn("Bio fail"); }
+        await navigator.credentials.get({ 
+            publicKey: { 
+                challenge: new Uint8Array(32), 
+                allowCredentials: [{ id: credId, type: 'public-key' }], 
+                userVerification: 'required' 
+            } 
+        });
+        switchScreen('dashboard'); 
+        updateUI(); 
+        showToast('Acceso concedido');
+        checkExchangeRate(); // Verificar tasa tras login
+    } catch (e) { 
+        console.warn("Bio login fail", e); 
+        document.getElementById('biometric-fallback-text').classList.remove('hidden');
+    }
+}
+
+function checkExchangeRate() {
+    // Si no hay tasa o es de un día diferente
+    const today = new Date().toLocaleDateString();
+    if (!state.bcvRate || state.lastRateDate !== today) {
+        showRatePrompt();
+    }
+}
+
+function showRatePrompt() {
+    const rate = prompt("Por favor ingresa la tasa BCV del día (Bs/$):", state.bcvRate || "");
+    if (rate && !isNaN(rate)) {
+        state.bcvRate = parseFloat(rate);
+        state.lastRateDate = new Date().toLocaleDateString();
+        saveData();
+        updateUI();
+        showToast("Tasa actualizada correctamente");
+    }
 }
 
 function initPinScreen() {

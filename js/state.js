@@ -9,7 +9,7 @@ let state = {
     email: null,
     phone: null,
     bcvRate: null,
-    lastRateUpdate: null,
+    lastRateDate: null,
     isAwaitingName: false,
     isAwaitingCategory: false,
     isAwaitingMoreInfo: false,
@@ -137,7 +137,7 @@ function recalcTotals() {
             state.expenses += t.amount;
             state.balance -= t.amount;
             if (isCurrentMonth) state.monthlyExpenses += t.amount;
-        } else if (t.type === 'transfer_in') {
+        } else if (t.type === 'transfer_in' || t.type === 'balance_init') {
             state.balance += t.amount;
         } else if (t.type === 'transfer_out') {
             state.balance -= t.amount;
@@ -158,11 +158,11 @@ function consolidateHistory() {
     // 2. Limpiar transacciones
     state.transactions = [];
 
-    // 3. Re-crear saldos iniciales
+    // 3. Re-crear saldos iniciales (como balance_init para que no cuenten como ingresos del mes)
     Object.keys(accountBalances).forEach(name => {
         const data = accountBalances[name];
         if (data.bal !== 0) {
-            addTransaction(data.bal, 'income', name, 'USD', data.group, null);
+            addTransaction(data.bal, 'balance_init', name, 'USD', data.group, null);
         }
     });
 
